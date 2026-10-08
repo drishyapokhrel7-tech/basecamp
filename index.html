@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Basecamp Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: app shell. Sidebar nav (traveler + operator) on wide screens, scrolling tab strip on phones; each view is a grid of working panels. */
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface-2:#E7ECE9; --ink:#14201C; --muted:#5A6863; --line:#D3DBD7;
+  --accent:#B8234A; --accent-soft:#F7E1E7; --accent-ink:#FFFFFF;
+  --glacier:#2B6A8A; --glacier-soft:#DDEBF2;
+  --ok:#2C7A4D; --ok-soft:#DCEFE3; --warn:#A86A12; --warn-soft:#F6EAD3; --crit:#B83227; --crit-soft:#F7DEDA;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --f-data:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px; --r-sm:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1D2723; --ink:#E4EBE7; --muted:#91A099; --line:#2A3631;
+  --accent:#EC5C83; --accent-soft:#3A1A24; --accent-ink:#1A0A10;
+  --glacier:#6DB2D4; --glacier-soft:#16303C;
+  --ok:#5BC48A; --ok-soft:#163223; --warn:#E3AA4E; --warn-soft:#352812; --crit:#F2715F; --crit-soft:#3A1915;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1D2723; --ink:#E4EBE7; --muted:#91A099; --line:#2A3631;
+  --accent:#EC5C83; --accent-soft:#3A1A24; --accent-ink:#1A0A10;
+  --glacier:#6DB2D4; --glacier-soft:#16303C;
+  --ok:#5BC48A; --ok-soft:#163223; --warn:#E3AA4E; --warn-soft:#352812; --crit:#F2715F; --crit-soft:#3A1915;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.6rem,2.6vw,2.1rem);letter-spacing:-.01em}
+h2{font-size:1.15rem}
+h3{font-size:1rem;font-weight:500}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--glacier);outline-offset:2px}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.small{font-size:.85rem}
+
+/* shell */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.side{border-right:1px solid var(--line);background:var(--surface);padding:20px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand svg{flex:none}
+.brand b{font-family:var(--f-display);font-size:1.3rem;letter-spacing:-.01em}
+.brand small{display:block;font-size:.72rem;color:var(--muted);line-height:1.2}
+.navgroup{display:flex;flex-direction:column;gap:2px}
+.navgroup .label{padding:0 10px 6px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--ink);text-decoration:none;font-weight:500}
+.nav a svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav a:hover{background:var(--surface-2)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.side .foot{margin-top:auto;font-size:.78rem;color:var(--muted);padding:0 10px}
+main{min-width:0;padding-inline:clamp(16px,3vw,36px);padding-block:18px 96px}
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.proto{font-size:.8rem;background:var(--warn-soft);color:var(--warn);padding:5px 10px;border-radius:99px;font-weight:600}
+.topbar .grow{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:.85rem;font-weight:500}
+select.chip{appearance:none;padding-right:28px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.locbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.locbox .chip svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:2}
+.locform{display:flex;gap:6px;flex-wrap:wrap}
+.locform[hidden]{display:none}
+.locform input{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:5px 10px;min-width:0;width:220px;max-width:100%}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;padding:8px 0}
+.loading::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.note{font-size:.82rem;color:var(--muted);background:var(--surface-2);border-radius:var(--r-sm);padding:8px 10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--glacier);color:var(--surface);display:grid;place-items:center;font-weight:600;font-size:.85rem}
+.view{display:none}
+.view.on{display:block}
+.vhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.vhead p{color:var(--muted);max-width:62ch;margin-top:6px}
+
+/* building blocks */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+.g2e{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.panel>h2{margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:8px 14px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ink{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:.82rem}
+.btn:disabled{opacity:.5;cursor:default}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.info{background:var(--glacier-soft);color:var(--glacier)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.plain::before{display:none}
+.list{display:flex;flex-direction:column}
+.list>*{padding-block:11px;border-top:1px solid var(--line)}
+.list>*:first-child{border-top:0;padding-top:0}
+.list>*:last-child{padding-bottom:0}
+.toggle{position:relative;width:40px;height:22px;flex:none}
+.toggle input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
+.toggle span{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:background .2s}
+.toggle span::after{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:var(--surface);transition:transform .2s}
+.toggle input:checked+span{background:var(--ok)}
+.toggle input:checked+span::after{transform:translateX(18px)}
+.toggle input:focus-visible+span{outline:2px solid var(--glacier);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 12px;font-size:.84rem;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:0 10px 8px 0;white-space:nowrap}
+td{padding:9px 10px 9px 0;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+td.wrap{white-space:normal}
+
+/* Plan with Scout */
+.chat{display:flex;flex-direction:column;height:min(640px,78vh)}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px}
+.msg{max-width:88%;padding:10px 14px;border-radius:14px;font-size:.93rem}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--bg);border-bottom-right-radius:4px}
+.msg.scout{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:4px}
+.msg.scout .who{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+.msg ul{margin:6px 0 0;padding-left:18px}
+.msg a{color:var(--glacier);font-weight:600}
+.msg.me a{color:inherit}
+.composer{display:flex;gap:8px;margin-top:12px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:var(--r-sm);padding:10px 12px}
+.suggest{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.suggest button{border:1px dashed var(--line);background:none;border-radius:99px;padding:4px 10px;font-size:.8rem;color:var(--muted)}
+.suggest button:hover{color:var(--ink);border-color:var(--muted)}
+.check{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center}
+.check .ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.check .ic svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.check.done .ic{background:var(--ok-soft);color:var(--ok)}
+.check .t{font-weight:600;font-size:.92rem}
+.check .d{font-size:.8rem;color:var(--muted)}
+.check .p{text-align:right;font-size:.88rem}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;margin-top:6px;border-top:2px solid var(--ink)}
+.total b{font-family:var(--f-display);font-size:1.6rem}
+.limitbar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:6px}
+.limitbar i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:.84rem}
+.rules ul{margin:6px 0 0;padding-left:16px;color:var(--muted)}
+
+/* Trips */
+.daystrip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:4px}
+.day{border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;font-size:.8rem;background:var(--surface)}
+.day b{display:block;font-size:.88rem}
+.day.past{background:var(--surface-2);color:var(--muted)}
+.day.now{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.profile{width:100%;height:auto;display:block;margin-top:14px}
+.profile text{font-family:var(--f-data);font-size:10px;fill:var(--muted)}
+.profile .ln{stroke:var(--ink);fill:none;stroke-width:2}
+.profile .ar{fill:var(--glacier-soft)}
+.profile .gr{stroke:var(--line);stroke-width:1}
+.profile .done{stroke:var(--accent);stroke-width:2.5;fill:none}
+.profile .pt{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.profile .you{fill:var(--accent)}
+.approval{border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--r-sm);padding:12px}
+.approval.resolved{border-color:var(--line);background:var(--surface-2)}
+.log{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;font-size:.88rem}
+.log time{font-family:var(--f-data);font-size:.78rem;color:var(--muted);padding-top:2px}
+.tripcard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;cursor:pointer;text-align:left;width:100%;background:none;border:0;padding:0}
+.tripcard[aria-pressed="true"] .tn{color:var(--accent)}
+.tn{font-weight:600}
+
+/* Rides */
+.route{display:grid;grid-template-columns:14px minmax(0,1fr);gap:2px 10px;align-items:center;font-size:.92rem}
+.route i{width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);justify-self:center}
+.route i.to{background:var(--accent);border-color:var(--accent);border-radius:2px}
+.route .ln{width:2px;height:16px;background:var(--line);justify-self:center}
+.ride{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.ride.pick{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.ride.chosen{background:var(--ok-soft)}
+.logo{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;font-family:var(--f-display)}
+.ride .price{text-align:right}
+.ride .price b{font-family:var(--f-data);font-size:1.05rem;display:block}
+.meter{display:flex;gap:2px}
+.meter i{width:8px;height:8px;border-radius:2px;background:var(--line)}
+.meter i.on{background:var(--glacier)}
+.offer{display:flex;gap:6px;align-items:center;margin-top:6px}
+.offer input{width:110px;border:1px solid var(--line);background:var(--bg);border-radius:var(--r-sm);padding:4px 8px}
+
+/* Nearby */
+.map{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:var(--r);overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+.map svg.base{position:absolute;inset:0;width:100%;height:100%}
+.map .water{fill:var(--glacier-soft);stroke:var(--glacier);stroke-width:1}
+.map .road{stroke:var(--surface);stroke-width:5;fill:none}
+.map .contour{stroke:var(--line);fill:none;stroke-width:1}
+.map .maplabel{font-family:var(--f-data);font-size:11px;fill:var(--muted)}
+.pin{position:absolute;transform:translate(-50%,-100%);border:0;background:none;padding:0}
+.pin span{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--glacier);border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.pin.ev span{background:var(--accent)}
+.pin[aria-pressed="true"] span{outline:3px solid var(--ink)}
+.me-dot{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--ink);border:3px solid var(--surface);transform:translate(-50%,-50%);box-shadow:0 0 0 6px color-mix(in srgb,var(--ink) 18%,transparent)}
+.place{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:start;text-align:left;background:none;border:0;padding-inline:0;width:100%}
+.place .t{font-weight:600}
+.place[aria-pressed="true"] .t{color:var(--accent)}
+.why{font-size:.82rem;color:var(--glacier);margin-top:2px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:.82rem;font-weight:600;color:var(--muted)}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Tickets */
+.ticket{display:grid;grid-template-columns:minmax(0,1fr) 128px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.ticket .body{padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ticket .stub{border-left:2px dashed var(--line);display:grid;place-items:center;padding:10px;background:var(--surface)}
+.qr{width:104px;height:104px;background:#fff;padding:6px;border-radius:6px;display:grid;place-items:center}
+.qr img,.qr canvas{width:92px!important;height:92px!important}
+.ticket .kind{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.ticket h3{font-family:var(--f-display);font-weight:700;font-size:1.05rem}
+
+/* Safety */
+.sosbox{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.sos{width:150px;height:150px;border-radius:50%;border:0;background:var(--crit);color:#fff;font-family:var(--f-display);font-size:1.6rem;font-weight:700;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+.sos small{display:block;font-family:var(--f-body);font-size:.75rem;font-weight:500;opacity:.9}
+.sos svg{position:absolute;inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px);transform:rotate(-90deg);pointer-events:none}
+.sos circle{fill:none;stroke:var(--crit);stroke-width:5;stroke-dasharray:502;stroke-dashoffset:502}
+.esc{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left}
+.esc div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:var(--r-sm);background:var(--surface-2);font-size:.86rem}
+.esc div.go{background:var(--crit-soft);color:var(--crit);font-weight:600}
+.cp{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:start}
+.cp i{width:12px;height:12px;border-radius:50%;margin-top:5px;border:2px solid var(--muted)}
+.cp.ok i{background:var(--ok);border-color:var(--ok)}
+.cp.next i{border-color:var(--accent);background:var(--accent-soft)}
+.sym{display:flex;gap:6px;flex-wrap:wrap}
+.sym label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:.84rem;cursor:pointer}
+.sym input{accent-color:var(--accent)}
+
+/* Operator */
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi b{font-family:var(--f-display);font-size:1.7rem;letter-spacing:-.01em}
+.kpi .d{font-size:.8rem}
+.up{color:var(--ok)} .down{color:var(--crit)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .dh{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cal .cell{min-height:92px;border:1px solid var(--line);border-radius:var(--r-sm);padding:6px;display:flex;flex-direction:column;gap:4px;background:var(--bg)}
+.cal .cell.today{border-color:var(--accent)}
+.cal .dn{font-family:var(--f-data);font-size:.75rem;color:var(--muted)}
+.bk{font-size:.72rem;border-radius:4px;padding:2px 5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk.trek{background:var(--glacier-soft);color:var(--glacier)}
+.bk.ev{background:var(--accent-soft);color:var(--accent)}
+.bk.ride{background:var(--warn-soft);color:var(--warn)}
+.calwrap{overflow-x:auto}
+.calwrap .cal{min-width:620px}
+.spark{width:100%;height:56px;display:block}
+.spark .a{fill:var(--glacier-soft)} .spark .l{stroke:var(--glacier);stroke-width:2;fill:none} .spark .e{fill:var(--glacier)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--r-sm);font-size:.9rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);z-index:20}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.scoutfab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--accent-ink);border:0;border-radius:99px;padding:12px 18px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:10;display:flex;gap:8px;align-items:center}
+.scoutfab svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+
+@media (max-width:1080px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:sticky;top:env(safe-area-inset-top,0px);height:auto;flex-direction:row;align-items:center;padding:10px 16px;gap:14px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);z-index:5}
+  .side .foot,.navgroup .label,.brand small{display:none}
+  .navgroup{flex-direction:row}
+  .nav a{white-space:nowrap;padding:7px 10px}
+  .g2,.g2e{grid-template-columns:minmax(0,1fr)}
+  .chat{height:auto}
+  .msgs{max-height:60vh}
+}
+@media (max-width:560px){
+  .g3,.g4{grid-template-columns:minmax(0,1fr)}
+  .ride{grid-template-columns:40px minmax(0,1fr);}
+  .ride .price{text-align:left;grid-column:2}
+  .ride .act{grid-column:1/-1}
+  .ticket{grid-template-columns:minmax(0,1fr)}
+  .ticket .stub{border-left:0;border-top:2px dashed var(--line)}
+  .rules{grid-template-columns:1fr}
+  .daystrip{grid-template-columns:repeat(5,minmax(64px,1fr));overflow-x:auto}
+  .scoutfab span{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head><body>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--ink)"/><path d="M5 22 L12 10 L16 16 L19 12 L25 22 Z" fill="var(--bg)"/><path d="M12 10 L14 13.4 L10.3 13 Z" fill="var(--accent)"/></svg>
+      <div><b>Basecamp</b><small>Plan it. Gear it. Live it.<br>Come home safe.</small></div>
+    </div>
+    <nav class="navgroup nav" aria-label="Traveler">
+      <div class="label">Traveler</div>
+      <a href="#plan" data-v="plan"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Plan with Scout</a>
+      <a href="#trips" data-v="trips"><svg viewBox="0 0 24 24"><path d="M3 20l6-12 4 7 3-4 5 9z"/></svg>Trips</a>
+      <a href="#rides" data-v="rides"><svg viewBox="0 0 24 24"><path d="M5 16h14l-2-6H7z"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>Rides</a>
+      <a href="#nearby" data-v="nearby"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Nearby</a>
+      <a href="#wallet" data-v="wallet"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 15h3"/></svg>Tickets &amp; documents</a>
+      <a href="#safety" data-v="safety"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 9v4M12 16h.01"/></svg>Safety</a>
+    </nav>
+    <div class="foot"><a href="/platform" style="color:var(--ink);font-weight:600">Open /platform</a><br>Prototype built from the Basecamp concept document (Oct 8, 2026). Sample bookings; no real payments.</div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <span class="proto">Prototype · sample data · no real bookings or payments</span>
+      <span class="grow"></span>
+      <div class="locbox">
+        <button class="chip" type="button" id="locchip" aria-expanded="false" aria-controls="locform"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="locname">Finding you…</span></button>
+        <span class="small muted" id="locsrc"></span>
+        <form id="locform" class="locform" hidden>
+          <input id="locin" placeholder="City, e.g. Kathmandu or Tokyo" autocomplete="off" aria-label="Your city">
+          <button class="btn sm ink" type="submit">Set</button>
+          <button class="btn sm" type="button" id="locdetect">Use my device</button>
+        </form>
+      </div>
+      <div class="avatar" title="Signed in as Asha (sample traveler)">AS</div>
+    </div>
+
+    <!-- PLAN -->
+    <section class="view" id="v-plan" aria-labelledby="h-plan">
+      <div class="vhead"><div><h1 id="h-plan">Plan with Scout</h1><p>Tell Scout what you want in plain words. It builds the plan, shows the full price, and books everything after one approval.</p></div></div>
+      <div class="grid g2">
+        <div class="panel chat">
+          <div class="msgs" id="msgs" aria-live="polite"></div>
+          <div class="suggest" id="suggest">
+            <button type="button">Make it cheaper</button>
+            <button type="button">Anything fun near me tonight?</button>
+            <button type="button">Move it one week later</button>
+            <button type="button">What should I pack?</button>
+          </div>
+          <form class="composer" id="composer">
+            <input id="chatin" autocomplete="off" placeholder="Ask Scout, e.g. 3-day rafting trip from Kathmandu">
+            <button class="btn ink" type="submit">Send</button>
+          </form>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <h2><span>Mardi Himal Trek · 4 days</span><span class="pill info" id="planstate">Waiting for your approval</span></h2>
+            <p class="small muted" style="margin-bottom:12px">Nov 2–5, 2026 · from Pokhara · beginner-friendly · highest point 4,500 m (Mardi Himal Base Camp)</p>
+            <div class="list" id="checklist"></div>
+            <div class="total"><span class="label">Total estimate</span><b class="num" id="total">NPR 0</b></div>
+            <div class="small muted" style="margin-top:8px"><span id="limittext"></span></div>
+            <div class="limitbar"><i id="limitbar"></i></div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn primary" id="approve" type="button">Approve and book all</button>
+              <span class="small muted">One tap books every item. You can cancel free until Oct 30.</span>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>What Scout may do on its own</h2>
+            <div class="row between small"><label for="limit">Spend limit per trip</label><b class="num" id="limitval">NPR 40,000</b></div>
+            <input type="range" id="limit" min="15000" max="80000" step="1000" value="40000" style="width:100%;accent-color:var(--accent)">
+            <div class="rules" style="margin-top:10px">
+              <div><b>Acts on its own</b><ul><li>Rebooks a cancelled ride within budget</li><li>Shares checkpoints with family</li><li>Sends weather and hazard alerts</li><li>Starts SOS escalation after a missed check-in</li></ul></div>
+              <div><b>Asks you first</b><ul><li>Any spend above your limit</li><li>Changing itinerary, dates or route</li><li>Choosing between guides or operators</li><li>Cancelling a paid booking</li></ul></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRIPS -->
+    <section class="view" id="v-trips" aria-labelledby="h-trips">
+      <div class="vhead"><div><h1 id="h-trips">Trips</h1><p>Your live trip, what Scout needs from you, and everything it has done on your behalf.</p></div>
+        <a class="btn" href="#safety">Hold for SOS</a></div>
+      <div class="grid g2">
+        <div class="stack">
+          <div class="panel">
+            <h2><span>Poon Hill Sunrise Trek</span><span class="pill ok">Live · Day 2 of 5</span></h2>
+            <p class="small muted">Oct 7–11, 2026 · Guide: Pemba Gurung (licence TAAN-4471) · 2 travelers</p>
+            <div class="daystrip" id="daystrip"></div>
+            <svg class="profile" id="profile" viewBox="0 0 640 190" role="img" aria-label="Altitude profile of the Poon Hill trek"></svg>
+          </div>
+          <div class="panel">
+            <h2>Scout needs your approval</h2>
+            <div class="stack" id="approvals"></div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <h2>What Scout did today</h2>
+            <div class="log" id="log"></div>
+          </div>
+          <div class="panel">
+            <h2>All trips</h2>
+            <div class="list" id="triplist"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIDES -->
+    <section class="view" id="v-rides" aria-labelledby="h-rides">
+      <div class="vhead"><div><h1 id="h-rides">Rides</h1><p id="ridesub">Scout asks every ride app for the same trip and ranks them by price, arrival time, vehicle and luggage fit.</p></div></div>
+      <div class="grid g2">
+        <div class="stack" id="ridelist"></div>
+        <div class="stack">
+          <div class="panel">
+            <h2>Trip</h2>
+            <div class="route" id="route"></div>
+            <dl class="kv" style="margin-top:14px" id="ridemeta"></dl>
+          </div>
+          <div class="panel">
+            <div class="row between"><div><b>Auto-rebook</b><p class="small muted">If a driver cancels or runs 10+ minutes late, Scout switches to the next-best option within your limit.</p></div>
+              <label class="toggle"><input type="checkbox" id="autorebook" checked aria-label="Auto-rebook"><span></span></label></div>
+          </div>
+          <div class="panel small muted" id="ridenote"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEARBY -->
+    <section class="view" id="v-nearby" aria-labelledby="h-nearby">
+      <div class="vhead"><div><h1 id="h-nearby">Nearby</h1><p>Scout starts from where you are right now and suggests events and places nearby, matched to your interests, budget and free time. Promoted listings are always labelled.</p></div>
+        <div class="filters" id="filters">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="event" aria-pressed="false">Events</button>
+          <button type="button" data-f="place" aria-pressed="false">Attractions</button>
+          <button type="button" data-f="free" aria-pressed="false">Free</button>
+        </div></div>
+      <div class="grid g2e">
+        <div class="stack">
+          <div class="map" id="map"></div>
+          <div class="panel" id="placedetail"></div>
+        </div>
+        <div class="panel"><h2><span id="nearbytitle">Around you</span><span class="small muted num" id="nearbycount"></span></h2><div id="nearbynote" style="margin-bottom:12px"></div><div class="list" id="placelist"></div></div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <h2>Alert settings</h2>
+        <div class="grid g4 small">
+          <div><div class="label">Radius</div><select class="chip" id="radius" style="margin-top:6px"><option>2 km</option><option selected>5 km</option><option>10 km</option></select></div>
+          <div><div class="label">Quiet hours</div><p class="num" style="margin-top:8px">22:00 – 07:00</p></div>
+          <div><div class="label">Daily cap</div><p class="num" style="margin-top:8px">3 alerts</p></div>
+          <div class="row between"><div><div class="label">Pause during treks</div><p class="muted" style="margin-top:4px">No event alerts on trail days</p></div><label class="toggle"><input type="checkbox" checked aria-label="Pause alerts during treks"><span></span></label></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WALLET -->
+    <section class="view" id="v-wallet" aria-labelledby="h-wallet">
+      <div class="vhead"><div><h1 id="h-wallet">Tickets &amp; documents</h1><p>Tickets, permits, insurance and passport, stored on this device so they open without signal. QR codes are signed so checkpoints can verify them offline.</p></div>
+        <span class="pill ok">Saved for offline · synced 13:42</span></div>
+      <div class="grid g2e" id="tickets"></div>
+    </section>
+
+    <!-- SAFETY -->
+    <section class="view" id="v-safety" aria-labelledby="h-safety">
+      <div class="vhead"><div><h1 id="h-safety">Safety</h1><p>Checkpoints, family updates, altitude checks and SOS. Safety switches on the moment your trip starts.</p></div>
+        <span class="pill ok">Safety watch on · Day 2</span></div>
+      <div class="grid g3">
+        <div class="panel sosbox">
+          <h2>Emergency SOS</h2>
+          <button class="sos" id="sos" type="button" aria-describedby="sostext">SOS<small id="soslabel">Hold 3 seconds</small>
+            <svg viewBox="0 0 166 166" aria-hidden="true"><circle id="sosring" cx="83" cy="83" r="80"/></svg></button>
+          <p class="small muted" id="sostext">Prototype: holding shows the escalation order. No alert is sent.</p>
+          <div class="esc" id="esc">
+            <div><span>1. Guide · Pemba Gurung</span><span class="num">+977 98•• ••4471</span></div>
+            <div><span>2. Emergency contacts (2)</span><span>SMS + call</span></div>
+            <div><span>3. Rescue partner, Pokhara</span><span>Satellite if no signal</span></div>
+            <div><span>4. Insurance and helicopter</span><span>If needed</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Checkpoints</h2>
+          <div class="list" id="checkpoints"></div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <h2>Family sharing</h2>
+            <p class="small muted" style="margin-bottom:10px">Shared with Mom and Rajesh.</p>
+            <div class="seg" id="famseg"><button type="button" aria-pressed="false" data-m="live">Live location</button><button type="button" aria-pressed="true" data-m="calm">Safe and on track</button></div>
+            <p class="small" style="margin-top:10px;padding:10px;background:var(--surface-2);border-radius:var(--r-sm)" id="fampreview"></p>
+          </div>
+          <div class="panel">
+            <h2>Altitude buddy</h2>
+            <p class="small muted">Daily check at Ghorepani (2,874 m). Tick anything you feel.</p>
+            <div class="sym" style="margin-top:10px" id="sym">
+              <label><input type="checkbox" value="1">Headache</label>
+              <label><input type="checkbox" value="1">Nausea</label>
+              <label><input type="checkbox" value="1">Dizziness</label>
+              <label><input type="checkbox" value="1">Poor sleep</label>
+              <label><input type="checkbox" value="2">Breathless at rest</label>
+              <label><input type="checkbox" value="2">Confusion</label>
+            </div>
+            <p class="small" style="margin-top:10px" id="symout"></p>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <h2>Alerts on your route</h2>
+        <div class="grid g3 small">
+          <div class="stack"><span class="pill warn">Weather</span><p>Afternoon cloud and light rain from 14:00 near Ghorepani. Poon Hill sunrise tomorrow looks clear (5:45 AM).</p></div>
+          <div class="stack"><span class="pill info">Trail</span><p>Stone steps above Ulleri are slippery after rain. Reported by 3 trekkers in the last 48 hours.</p></div>
+          <div class="stack"><span class="pill ok">Road</span><p>Nayapul to Pokhara road is open. Your Day 5 jeep is confirmed for 13:00.</p></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<button class="scoutfab" type="button" id="fab"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Ask Scout</span></button>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const npr=n=>"NPR "+Math.round(n).toLocaleString("en-US");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let toastT; function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("on"),2800)}
+const ICON={ride:'<path d="M5 16h14l-2-6H7z"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>',permit:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',guide:'<circle cx="12" cy="7" r="3"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/>',stay:'<path d="M3 11l9-7 9 7v9H3z"/><path d="M10 20v-5h4v5"/>',gear:'<path d="M8 3h8l1 5v13H7V8z"/><path d="M7 8h10"/>',safety:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',ins:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',done:'<path d="M5 12l5 5 9-10"/>'};
+const ic=k=>`<svg viewBox="0 0 24 24">${ICON[k]}</svg>`;
+
+/* ---------- routing ---------- */
+const VIEWS=["plan","trips","rides","nearby","wallet","safety"];
+function route(){const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"nearby";
+  $$(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  $$(".nav a").forEach(a=>a.dataset.v===v?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
+  $("#fab").hidden=(v==="plan"); window.scrollTo(0,0)}
+window.addEventListener("hashchange",route);
+$("#fab").onclick=()=>{location.hash="plan";setTimeout(()=>$("#chatin").focus(),50)};
+
+/* ---------- country ---------- */
+let country="np", NEAR=null, RIDE=null, loc={city:null,country:"",lat:null,lon:null,src:""};
+function fmt(cur,n){return cur==="NPR"?npr(n):cur==="USD"?"$"+(n%1?n.toFixed(2):n):cur+" "+Math.round(n).toLocaleString("en-US")}
+
+/* ---------- PLAN ---------- */
+let items=[
+ {k:"ride",t:"Jeep, Pokhara to Kande trailhead",d:"Nov 2, 07:30 · shared jeep, 4 seats held",p:2400},
+ {k:"permit",t:"ACAP permit + TIMS card",d:"Pre-filled from your passport · 2 travelers",p:8000},
+ {k:"guide",t:"Licensed guide · Pemba Gurung",d:"4 days · rating 4.9 · first-aid certified",p:14000},
+ {k:"stay",t:"Teahouses · 3 nights",d:"Forest Camp, High Camp, Siding village",p:6600},
+ {k:"gear",t:"Gear rental near Lakeside",d:"2 sleeping bags (−10°C), 2 down jackets",p:2400},
+ {k:"ins",t:"Rescue insurance, high days only",d:"Days 2–3 above 3,500 m · helicopter cover",p:3900},
+ {k:"safety",t:"Safety watch",d:"Checkpoints, family updates, weather alerts",p:0}
+];
+let approved=false, limit=40000;
+function planTotal(){return items.reduce((a,b)=>a+b.p,0)}
+function renderPlan(){
+  $("#checklist").innerHTML=items.map(i=>`<div class="check ${i.done?"done":""}"><span class="ic">${ic(i.done?"done":i.k)}</span><div style="min-width:0"><div class="t">${esc(i.t)}</div><div class="d">${esc(i.d)}</div></div><div class="p"><span class="num">${i.p?npr(i.p):"Free"}</span><br>${i.done?'<span class="pill ok">Booked</span>':'<span class="pill plain">Ready</span>'}</div></div>`).join("");
+  const t=planTotal(); $("#total").textContent=npr(t);
+  const pct=Math.min(100,t/limit*100); $("#limitbar").style.width=pct+"%";
+  $("#limitbar").style.background=t>limit?"var(--crit)":"var(--ok)";
+  $("#limittext").textContent=t>limit?`${npr(t-limit)} over your limit. Scout will ask before booking.`:`${npr(limit-t)} under your ${npr(limit)} limit · about ${npr(t/2)} per person`;
+  $("#limitval").textContent=npr(limit);
+}
+$("#limit").oninput=e=>{limit=+e.target.value;renderPlan()};
+$("#approve").onclick=()=>{
+  if(approved)return; approved=true; $("#approve").disabled=true; $("#planstate").className="pill warn"; $("#planstate").textContent="Booking…";
+  items.forEach((it,n)=>setTimeout(()=>{it.done=true;renderPlan();if(n===items.length-1){$("#planstate").className="pill ok";$("#planstate").textContent="Booked";$("#approve").textContent="Approved";
+    addMsg("scout",`All set. I booked all 7 items for <b>${npr(planTotal())}</b>. Permits and tickets are in <a href="#wallet">Tickets &amp; documents</a>, and the trip is under <a href="#trips">Trips</a>. I'll check the weather each evening before you start.`);
+    trips.splice(1,0,{n:"Mardi Himal Trek",d:"Nov 2–5, 2026 · 2 travelers",s:"Booked",c:"info"});renderTripList();toast("Trip approved. Sample bookings only.")}},250*(n+1)));
+};
+const msgs=[];
+function addMsg(who,html){msgs.push({who,html});const el=document.createElement("div");el.className="msg "+who;el.innerHTML=(who==="scout"?'<div class="who">Scout</div>':"")+html;$("#msgs").appendChild(el);$("#msgs").scrollTop=$("#msgs").scrollHeight}
+addMsg("me","4-day Mardi Himal trek in early November from Pokhara. Budget friendly, I'm a beginner. Two of us.");
+addMsg("scout",`Here's a plan for two that suits beginners: <b>Nov 2–5</b>, with a short Day 1 to Forest Camp so you acclimatise before High Camp (3,580 m).<ul><li>Shared jeep to Kande, licensed guide, 3 teahouse nights</li><li>Permits pre-filled from your passports</li><li>Insurance only for the two days above 3,500 m</li></ul>Total is <b>${npr(planTotal())}</b>, inside your limit. Approve once and I'll book everything.`);
+function scoutReply(q){
+  const s=q.toLowerCase();
+  if(/cheap|budget|less|save/.test(s)){const g=items.find(i=>i.k==="guide");if(g.p>10000&&!approved){g.t="Porter-guide · Suman Thapa";g.d="4 days · licensed · carries up to 15 kg";g.p=10000;renderPlan();return `I swapped the guide for a licensed porter-guide, which saves <b>NPR 4,000</b>. New total: <b>${npr(planTotal())}</b>. I kept the insurance, since you'll be above 3,500 m.`}return "This is already the leanest plan I'd recommend for a first high trek. Going lower would mean skipping the guide, which I don't suggest for beginners."}
+  if(/tonight|concert|music|event|fun|show/.test(s)){const L=(NEAR||PLACES[country]).list,ev=L.find(p=>p.type==="event")||L[0];return `Near you in ${esc(loc.city||"Pokhara")}: <b>${esc(ev.n)}</b> (${esc(ev.when)}, ${esc(ev.dist)}). It won't clash with your early start. See more on <a href="#nearby">Nearby</a>.`}
+  if(/week|date|later|move|change/.test(s))return "Moving the trek to Nov 9–12 changes your dates, so I'm asking first. Same guide is free those days and the jeep price is the same. Reply <b>yes</b> and I'll update every booking.";
+  if(/^yes/.test(s))return "Done in this prototype. In the real app I'd now rebook the jeep, guide and teahouses for Nov 9–12 and send you the new tickets.";
+  if(/pack|gear|bring|wear/.test(s))return "Packing list for Mardi Himal in November: layers for −5°C nights at High Camp, rain shell, 2 L of water bottles, headlamp, trekking poles, sunscreen, Diamox (ask a doctor), and cash in small notes for teahouses. Sleeping bags and down jackets are already in the plan as rentals.";
+  if(/ride|taxi|jeep|pathao|uber|indrive/.test(s))return `I compare every ride app for the same pickup and drop-off. Open <a href="#rides">Rides</a> to see today's options side by side.`;
+  if(/raft|kathmandu|trek|days?|trip/.test(s))return "I can plan that too. In this prototype I'm showing one plan at a time, so I've kept Mardi Himal on the right. In the full app, I'd build the new trip next to this one so you can compare.";
+  return "Got it. I can change dates, swap the guide, cut costs, find things to do nearby, or book a ride. What would you like?";
+}
+function send(q){q=q.trim();if(!q)return;addMsg("me",esc(q));setTimeout(()=>addMsg("scout",scoutReply(q)),450)}
+$("#composer").onsubmit=e=>{e.preventDefault();send($("#chatin").value);$("#chatin").value=""};
+$$("#suggest button").forEach(b=>b.onclick=()=>send(b.textContent));
+renderPlan();
+
+/* ---------- TRIPS ---------- */
+const days=[["Day 1","Oct 7","Nayapul → Tikhedhunga"],["Day 2","Oct 8","→ Ghorepani"],["Day 3","Oct 9","Poon Hill → Tadapani"],["Day 4","Oct 10","→ Ghandruk"],["Day 5","Oct 11","→ Nayapul → Pokhara"]];
+$("#daystrip").innerHTML=days.map((d,i)=>`<div class="day ${i<1?"past":i===1?"now":""}"><b>${d[0]}</b><span class="num">${d[1]}</span><div class="muted">${d[2]}</div></div>`).join("");
+(function profile(){
+  const pts=[["Pokhara",822],["Nayapul",1070],["Tikhedhunga",1540],["Ulleri",2010],["Ghorepani",2874],["Poon Hill",3210],["Tadapani",2630],["Ghandruk",1940],["Nayapul",1070],["Pokhara",822]];
+  const W=640,H=190,L=60,R=12,T=14,B=30,min=500,max=3500;
+  const x=i=>L+i*(W-L-R)/(pts.length-1), y=a=>T+(max-a)/(max-min)*(H-T-B);
+  let g="";[1000,2000,3000].forEach(a=>{g+=`<line class="gr" x1="${L}" x2="${W-R}" y1="${y(a)}" y2="${y(a)}"/><text x="${L-6}" y="${y(a)+3}" text-anchor="end">${a.toLocaleString()} m</text>`});
+  const path=pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const area=path+` L${x(pts.length-1)},${H-B} L${x(0)},${H-B} Z`;
+  // current position: between Ulleri (3) and Ghorepani (4), ~60%
+  const cx=x(3)+0.6*(x(4)-x(3)), cy=y(2010+0.6*(2874-2010));
+  const donePath=pts.slice(0,4).map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ")+` L${cx.toFixed(1)},${cy.toFixed(1)}`;
+  let lbl="";pts.forEach((p,i)=>{if([0,2,4,5,7].includes(i)){lbl+=`<circle class="pt" cx="${x(i)}" cy="${y(p[1])}" r="3.5"/><text x="${x(i)}" y="${H-B+16}" text-anchor="middle">${p[0]}</text>`}});
+  lbl+=`<text x="${x(5)}" y="${y(3210)-8}" text-anchor="middle" style="fill:var(--ink);font-weight:600">3,210 m</text>`;
+  $("#profile").innerHTML=g+`<path class="ar" d="${area}"/><path class="ln" d="${path}"/><path class="done" d="${donePath}"/>`+lbl+`<circle class="you" cx="${cx}" cy="${cy}" r="6"/><text x="${cx+8}" y="${cy+18}" text-anchor="start" style="fill:var(--accent);font-weight:600">You · 2,530 m</text>`;
+})();
+const approvals=[
+  {t:"Upgrade Day 5 jeep to a private transfer?",d:"Shared jeep from Nayapul is full at 13:00. A private jeep is NPR 4,200, which is NPR 1,800 more than planned.",a:"Approve NPR 4,200",b:"Wait for 15:00 shared jeep"},
+  {t:"Book the Ghorepani teahouse with a heated dining room?",d:"Same price as your current booking (NPR 1,100). Two rooms left.",a:"Switch teahouse",b:"Keep current"}
+];
+function renderApprovals(){$("#approvals").innerHTML=approvals.map((a,i)=>a.r?`<div class="approval resolved small"><b>${esc(a.t)}</b><p class="muted">${esc(a.r)}</p></div>`:`<div class="approval"><b>${esc(a.t)}</b><p class="small" style="margin:4px 0 10px">${esc(a.d)}</p><div class="row"><button class="btn primary sm" data-i="${i}" data-c="a">${esc(a.a)}</button><button class="btn sm" data-i="${i}" data-c="b">${esc(a.b)}</button></div></div>`).join("");
+  $$("#approvals button").forEach(b=>b.onclick=()=>{const a=approvals[b.dataset.i];a.r=(b.dataset.c==="a"?"You approved: ":"You chose: ")+(b.dataset.c==="a"?a.a:a.b)+". Scout updated the booking.";renderApprovals();addLog("now",a.r);toast("Done. Scout updated your trip.")})}
+renderApprovals();
+const logs=[["06:10","Weather check: clear morning, rain likely after 14:00. Suggested leaving Tikhedhunga by 7:00."],["07:02","Shared your check-out from Tikhedhunga with Mom and Rajesh."],["09:48","Checkpoint Ulleri (2,010 m) logged when you scanned the teahouse QR."],["11:15","Your Day 5 jeep driver cancelled. Rebooked a new shared jeep at the same price (within limit)."],["12:30","Hazard note: slippery steps above Ulleri, 3 recent reports."]];
+function renderLog(){$("#log").innerHTML=logs.map(l=>`<time>${l[0]}</time><div>${esc(l[1])}</div>`).join("")}
+function addLog(t,s){const d=new Date();logs.push([String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"),s]);renderLog()}
+renderLog();
+const trips=[{n:"Poon Hill Sunrise Trek",d:"Oct 7–11, 2026 · live now",s:"Live",c:"ok"},{n:"Bhaktapur day trip",d:"Oct 13, 2026 · ride + heritage ticket",s:"Booked",c:"info"},{n:"Trisuli rafting weekend",d:"Sep 19–20, 2026",s:"Completed",c:"plain"}];
+function renderTripList(){$("#triplist").innerHTML=trips.map(t=>`<div class="row between"><div><div class="tn">${esc(t.n)}</div><div class="small muted">${esc(t.d)}</div></div><span class="pill ${t.c}">${t.s}</span></div>`).join("")}
+renderTripList();
+
+/* ---------- RIDES ---------- */
+const RIDES={
+ np:{from:"Hotel Barahi, Lakeside",to:"Baglung Bus Park, Pokhara",meta:[["Distance","5.8 km"],["Luggage","2 backpacks (60 L)"],["Pay with","eSewa, Khalti or card"],["Pickup","Now"]],
+  sub:"Scout asks every ride app for the same trip and ranks them by price, arrival time, vehicle and luggage fit.",
+  note:"Ride booking inside Basecamp needs a partnership with each provider. Until then, “Open in app” hands off to the ride app with pickup and drop-off already filled in. Basecamp never scrapes ride apps.",
+  list:[
+   {id:"pathao",n:"Pathao",c:"#E2136E",v:"Car · Alto/WagonR",eta:4,p:410,comfort:3,lug:"Fits 2 bags",pick:true,why:"Cheapest car that fits both backpacks, arriving in 4 min."},
+   {id:"indrive",n:"inDrive",c:"#4C8A1E",v:"Car · driver bids",eta:6,p:380,comfort:3,lug:"Fits 2 bags",bid:true,why:"Lowest bid so far. Scout can counter-offer within your limit."},
+   {id:"uber",n:"Uber",c:"#111111",v:"Car",eta:9,p:520,comfort:4,lug:"Fits 2 bags"},
+   {id:"pbike",n:"Pathao",c:"#E2136E",v:"Bike",eta:2,p:160,comfort:1,lug:"No room for 60 L packs"},
+   {id:"taxi",n:"Lakeside taxi stand",c:"#8A6A12",v:"Metered taxi",eta:3,p:600,comfort:3,lug:"Fits 2 bags"}]},
+ us:{from:"Pod 51 Hotel, Midtown",to:"Madison Square Garden",meta:[["Distance","2.1 mi"],["Luggage","None"],["Pay with","Card, Apple Pay, Google Pay"],["Pickup","Now"]],
+  sub:"In the USA, Scout compares Uber, Lyft, bike share, transit and walking for the same trip. You choose the mode.",
+  note:"Scout only offers what operates where you are. Fares are estimates; in-app booking depends on partner agreements, otherwise Scout hands off with the trip pre-filled.",
+  list:[
+   {id:"subway",n:"Subway",c:"#0039A6",v:"E train · 3 stops",eta:14,p:2.9,comfort:2,lug:"Card or phone tap",pick:true,why:"Fastest at rush hour and cheapest. Exit at 34 St–Penn Station.",usd:true},
+   {id:"citibike",n:"Citi Bike",c:"#0072CE",v:"Bike share",eta:16,p:4.79,comfort:2,lug:"Dock at W 33 St",usd:true},
+   {id:"uberus",n:"Uber",c:"#111111",v:"UberX",eta:22,p:24.5,comfort:4,lug:"Heavy traffic on 7 Ave",usd:true},
+   {id:"lyft",n:"Lyft",c:"#FF00BF",v:"Standard",eta:21,p:23.1,comfort:4,lug:"Heavy traffic on 7 Ave",usd:true},
+   {id:"walk",n:"Walk",c:"#5A6863",v:"On foot",eta:34,p:0,comfort:1,lug:"Mostly lit avenues",usd:true}]}
+};
+let chosenRide=null;
+function money(r){return r.p?fmt(r.cur||(r.usd?"USD":"NPR"),r.p):"Free"}
+function renderRides(){
+  let R=RIDE||RIDES[country]; chosenRide=null;
+  if(NEAR&&selPlace){R=Object.assign({},R,{from:"Your location, "+(loc.city||"current position"),to:selPlace.n,meta:[["Distance",selPlace.dist.split(" · ")[0]],["Pay with",country==="np"?"eSewa, Khalti or card":"Card, Apple Pay, Google Pay or local wallet"],["Pickup","Now"]]})}
+  $("#ridesub").textContent=R.sub; $("#ridenote").textContent=R.note;
+  $("#route").innerHTML=`<i></i><span>${esc(R.from)}</span><span class="ln"></span><span></span><i class="to"></i><b>${esc(R.to)}</b>`;
+  $("#ridemeta").innerHTML=R.meta.map(m=>`<dt>${m[0]}</dt><dd>${m[1]}</dd>`).join("");
+  $("#ridelist").innerHTML=R.list.map(r=>`<div class="ride ${r.pick?"pick":""}" id="r-${r.id}">
+    <div class="logo" style="background:${r.c}">${esc(r.n.split(" ")[0].slice(0,2).toUpperCase())}</div>
+    <div style="min-width:0"><div class="row"><b>${esc(r.n)}</b>${r.pick?'<span class="pill ok">Scout’s pick</span>':""}${r.bid?'<span class="pill info plain">Bid-based</span>':""}</div>
+      <div class="small muted">${esc(r.v)} · ${esc(r.lug)}</div>
+      <div class="row small" style="gap:6px;margin-top:3px"><span class="muted">Comfort</span><span class="meter">${[1,2,3,4].map(n=>`<i class="${n<=r.comfort?"on":""}"></i>`).join("")}</span></div>
+      ${r.why?`<div class="why">${esc(r.why)}</div>`:""}
+      ${r.bid&&!RIDE?`<div class="offer"><label class="small muted" for="bid">Counter-offer NPR</label><input id="bid" class="num" type="number" value="340" min="200" max="600" step="10"><button class="btn sm" type="button" id="bidbtn">Propose</button></div>`:""}
+    </div>
+    <div class="price"><b>${money(r)}</b><span class="small muted num">${r.eta} min</span></div>
+    <div class="act"><button class="btn sm ${r.pick?"primary":""}" type="button" data-r="${r.id}">${/walk/i.test(r.n+r.v)?"Get directions":"Open in app"}</button></div></div>`).join("");
+  $$("#ridelist [data-r]").forEach(b=>b.onclick=()=>{const r=R.list.find(x=>x.id===b.dataset.r);$$(".ride").forEach(e=>e.classList.remove("chosen"));$("#r-"+r.id).classList.add("chosen");
+    toast(/walk/i.test(r.n+r.v)?"Directions ready. Scout will check in when you arrive.":`Prototype: would open ${r.n} with pickup and drop-off filled in.`)});
+  const bb=$("#bidbtn"); if(bb)bb.onclick=()=>{const v=+$("#bid").value;toast(v<300?`NPR ${v} is likely too low. Drivers rarely accept under NPR 300 for this trip.`:`Counter-offer of NPR ${v} sent to nearby drivers (sample).`)};
+}
+renderRides();
+
+/* ---------- NEARBY ---------- */
+const PLACES={
+ np:{title:"Around Lakeside, Pokhara",lake:true,list:[
+  {id:"band",type:"event",n:"Live band night at a Lakeside café",cat:"Music",when:"Tonight 20:00–22:30",dist:"0.7 km · 9 min walk",price:500,x:46,y:52,why:"Fits your free evening and ends early enough for tomorrow."},
+  {id:"dance",type:"event",n:"Gurung cultural dance show",cat:"Culture",when:"Tonight 18:30",dist:"1.4 km · 6 min ride",price:800,x:58,y:40,promo:true,why:"Matches your interest in local culture."},
+  {id:"sarangkot",type:"place",n:"Sarangkot sunrise viewpoint",cat:"Scenic spot",when:"Sunrise 5:58 · clear skies",dist:"9 km · 25 min ride",price:0,x:24,y:18,why:"Highest-rated viewpoint near you. Best visited at sunrise."},
+  {id:"pagoda",type:"place",n:"World Peace Pagoda",cat:"Heritage",when:"Open 7:00–19:00",dist:"2.6 km · boat + 30 min hike",price:0,x:40,y:78,why:"A half-day option for your rest day on Oct 12."},
+  {id:"museum",type:"place",n:"International Mountain Museum",cat:"Museum",when:"Open 9:00–17:00",dist:"4.1 km · 12 min ride",price:500,x:72,y:72,why:"Good for a rainy afternoon."},
+  {id:"para",type:"place",n:"Paragliding from Sarangkot",cat:"Adventure",when:"Flights 9:00–15:00",dist:"9 km · pickup included",price:9500,x:30,y:24,why:"Weather window is good until noon tomorrow."},
+  {id:"cave",type:"place",n:"Gupteshwor Cave and Davis Falls",cat:"Nature",when:"Open 6:00–18:00",dist:"3.8 km · 11 min ride",price:300,x:62,y:86}]},
+ us:{title:"Around Midtown, New York",lake:false,list:[
+  {id:"msg",type:"event",n:"Indie rock night at Madison Square Garden",cat:"Music",when:"Tonight 19:30",dist:"2.1 mi · 14 min subway",price:89,usd:true,x:38,y:62,why:"A band you saved is on the bill."},
+  {id:"bway",type:"event",n:"Broadway musical, evening show",cat:"Show",when:"Tonight 20:00 · 6 seats left",dist:"0.4 mi · 8 min walk",price:129,usd:true,x:52,y:44,promo:true,why:"Few tickets left for tonight."},
+  {id:"comedy",type:"event",n:"Comedy cellar late show",cat:"Comedy",when:"Tonight 22:00",dist:"3.0 mi · 18 min subway",price:25,usd:true,x:46,y:86},
+  {id:"park",type:"place",n:"Central Park, Bow Bridge",cat:"Scenic spot",when:"Open until 1:00",dist:"1.2 mi · 22 min walk",price:0,usd:true,x:58,y:12,why:"Golden hour starts at 18:05."},
+  {id:"highline",type:"place",n:"The High Line",cat:"Park",when:"Open 7:00–22:00",dist:"1.8 mi · 12 min ride",price:0,usd:true,x:22,y:70},
+  {id:"rock",type:"place",n:"Top of the Rock observation deck",cat:"Attraction",when:"Open 9:00–24:00",dist:"0.3 mi · 6 min walk",price:40,usd:true,x:56,y:34,why:"Clear skies tonight: good for the skyline view."}]}
+};
+let filter="all", selPlace=null;
+function priceTxt(p){return p.price===0?"Free":fmt(p.cur||(p.usd?"USD":"NPR"),p.price)}
+function renderNearby(){
+  const P=NEAR||PLACES[country]; const vis=P.list.filter(p=>filter==="all"||(filter==="free"?p.price===0:p.type===filter));
+  if(!selPlace||!P.list.includes(selPlace))selPlace=P.list[0];
+  $("#nearbytitle").textContent=P.title; $("#nearbycount").textContent=vis.length+" matches";
+  const base=P.gen?`<g class="contour">${Array.from({length:9},(_,i)=>`<line x1="0" x2="400" y1="${i*36}" y2="${i*36}"/>`).join("")}${Array.from({length:12},(_,i)=>`<line y1="0" y2="300" x1="${i*36}" x2="${i*36}"/>`).join("")}</g><circle class="contour" cx="${P.me.x*4}" cy="${P.me.y*3}" r="60"/><circle class="contour" cx="${P.me.x*4}" cy="${P.me.y*3}" r="120"/>`:P.lake?`<path class="contour" d="M0,120 C80,90 140,140 220,100 S360,60 400,90"/><path class="contour" d="M0,70 C90,40 150,80 230,50 S350,20 400,40"/><path class="water" d="M130,170 C150,130 220,120 260,150 C300,180 300,230 250,250 C200,270 120,250 115,215 C110,195 120,185 130,170 Z"/><path class="road" d="M0,200 C100,190 140,150 200,130 S330,140 400,120"/><path class="road" d="M220,300 C230,240 240,180 260,120 S270,40 290,0"/><text class="maplabel" x="170" y="210">Phewa Lake</text><text class="maplabel" x="300" y="150">Lakeside</text>`
+   :`<g class="contour">${Array.from({length:9},(_,i)=>`<line x1="0" x2="400" y1="${i*36}" y2="${i*36}"/>`).join("")}${Array.from({length:12},(_,i)=>`<line y1="0" y2="300" x1="${i*36}" x2="${i*36}"/>`).join("")}</g><rect class="water" x="170" y="0" width="120" height="50"/><path class="road" d="M0,240 L400,160"/><path class="road" d="M120,300 L230,0"/><text class="maplabel" x="186" y="30">Central Park</text><text class="maplabel" x="12" y="232">Broadway</text>`;
+  $("#map").innerHTML=`<svg class="base" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${base}</svg>`+
+   vis.map(p=>`<button class="pin ${p.type==="event"?"ev":""}" style="left:${p.x}%;top:${p.y}%" aria-pressed="${p===selPlace}" aria-label="${esc(p.n)}" data-p="${p.id}"><span></span></button>`).join("")+
+   `<div class="me-dot" style="left:${(P.me||{x:50}).x}%;top:${(P.me||{y:56}).y}%" title="You"></div>`;
+  $("#placelist").innerHTML=vis.length?vis.map(p=>`<button class="place" type="button" data-p="${p.id}" aria-pressed="${p===selPlace}"><div style="min-width:0"><div class="t">${esc(p.n)}</div><div class="small muted">${esc(p.cat)} · ${esc(p.when)}</div><div class="small muted">${esc(p.dist)}</div>${p.why?`<div class="why">Why: ${esc(p.why)}</div>`:""}</div><div style="text-align:right"><span class="num small">${priceTxt(p)}</span><br>${p.promo?'<span class="pill warn plain">Promoted</span>':`<span class="pill ${p.type==="event"?"acc":"info"} plain">${p.type==="event"?"Event":"Place"}</span>`}</div></button>`).join(""):'<p class="muted small">Nothing matches this filter nearby.</p>';
+  $$("#map [data-p],#placelist [data-p]").forEach(b=>b.onclick=()=>{selPlace=P.list.find(x=>x.id===b.dataset.p);renderNearby();renderRides()});
+  const s=selPlace;
+  $("#placedetail").innerHTML=`<div class="row between"><h2 style="margin:0">${esc(s.n)}</h2>${s.promo?'<span class="pill warn plain">Promoted</span>':""}</div>
+   <p class="small muted" style="margin:6px 0 12px">${esc(s.cat)} · ${esc(s.when)} · ${esc(s.dist)}</p>
+   <div class="row"><button class="btn primary" type="button" id="bookplace">${s.price===0?"Add to plan + book ride":"Book ticket + ride · "+priceTxt(s)}</button><a class="btn" href="#rides">Compare rides</a></div>`;
+  $("#bookplace").onclick=()=>{toast(`Prototype: Scout would book ${s.price?"the ticket and ":""}a ride, then add it to your plan.`);if(s.price)addTicket(s)};
+}
+$$("#filters button").forEach(b=>b.onclick=()=>{filter=b.dataset.f;$$("#filters button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderNearby()});
+renderNearby();
+
+/* ---------- LOCATION ---------- */
+const TZ={"Asia/Kathmandu":["Kathmandu","Nepal",27.7172,85.324],"Asia/Katmandu":["Kathmandu","Nepal",27.7172,85.324],"America/New_York":["New York","USA",40.7128,-74.006],"America/Chicago":["Chicago","USA",41.8781,-87.6298],"America/Denver":["Denver","USA",39.7392,-104.9903],"America/Los_Angeles":["Los Angeles","USA",34.0522,-118.2437],"Asia/Kolkata":["New Delhi","India",28.6139,77.209],"Asia/Calcutta":["New Delhi","India",28.6139,77.209],"Asia/Dhaka":["Dhaka","Bangladesh",23.8103,90.4125],"Europe/London":["London","UK",51.5074,-0.1278],"Europe/Paris":["Paris","France",48.8566,2.3522],"Europe/Berlin":["Berlin","Germany",52.52,13.405],"Asia/Tokyo":["Tokyo","Japan",35.6762,139.6503],"Asia/Singapore":["Singapore","Singapore",1.3521,103.8198],"Asia/Dubai":["Dubai","UAE",25.2048,55.2708],"Australia/Sydney":["Sydney","Australia",-33.8688,151.2093]};
+function showLoc(){$("#locname").textContent=loc.city?loc.city+(loc.country?", "+loc.country:""):"Near you";$("#locsrc").textContent=loc.src?"· "+loc.src:""}
+function setCountry(){country=/nepal|kathmandu|pokhara|lukla|chitwan|bhaktapur|lalitpur/i.test((loc.country||"")+" "+(loc.city||""))?"np":"us"}
+function fromTimezone(){let tz="";try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}
+  const t=TZ[tz]; if(t)return {city:t[0],country:t[1],lat:t[2],lon:t[3],src:"from your device's time zone"};
+  const c=tz.split("/").pop().replace(/_/g," "); return c&&c!=="UTC"?{city:c,country:"",lat:null,lon:null,src:"from your device's time zone"}:{city:"Pokhara",country:"Nepal",lat:28.2096,lon:83.9856,src:"default"}}
+function deviceCoords(){return new Promise(res=>{if(!navigator.geolocation)return res(null);let done=false;const fin=v=>{if(!done){done=true;res(v)}};
+  setTimeout(()=>fin(null),6000);try{navigator.geolocation.getCurrentPosition(p=>fin({lat:p.coords.latitude,lon:p.coords.longitude}),()=>fin(null),{enableHighAccuracy:false,timeout:5500,maximumAge:600000})}catch(e){fin(null)}})}
+async function detect(manual){
+  $("#locname").textContent="Finding you…";$("#locsrc").textContent="";
+  const c=await deviceCoords(); const tz=fromTimezone();
+  if(c){loc={city:null,country:"",lat:c.lat,lon:c.lon,src:"from your device location"};
+    const t=Object.values(TZ).find(v=>Math.abs(v[2]-c.lat)<0.6&&Math.abs(v[3]-c.lon)<0.6); if(t){loc.city=t[0];loc.country=t[1]}}
+  else{loc=tz; if(manual)toast("Your device didn't share its location here, so Scout used your time zone. You can also type a city.")}
+  showLoc();generateNearby();
+}
+function hav(a,b,c,d){const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function distTxt(km){return (km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km")+" · "+(km<1.5?Math.max(1,Math.round(km/0.08))+" min walk":Math.round(km*3+4)+" min ride")}
+function normalize(d){
+  const cur=String(d.currency||"").toUpperCase().slice(0,3)||"USD";
+  const clat=+(loc.lat??d.lat), clon=+(loc.lon??d.lon);
+  const pl=(Array.isArray(d.places)?d.places:[]).filter(p=>p&&typeof p.name==="string"&&isFinite(+p.lat)&&isFinite(+p.lon)).slice(0,10);
+  if(!pl.length||!isFinite(clat)||!isFinite(clon))throw {code:"bad_shape"};
+  const lats=pl.map(p=>+p.lat).concat(clat),lons=pl.map(p=>+p.lon).concat(clon);
+  const mnA=Math.min(...lats),mxA=Math.max(...lats),mnO=Math.min(...lons),mxO=Math.max(...lons),sA=Math.max(mxA-mnA,.01),sO=Math.max(mxO-mnO,.01);
+  const X=o=>10+(o-mnO)/sO*80, Y=a=>12+(mxA-a)/sA*76;
+  const list=pl.map((p,i)=>({id:"n"+i,type:p.type==="event"?"event":"place",n:p.name,cat:String(p.category||"Place"),when:String(p.when||""),price:Math.max(0,+p.price||0),cur,x:X(+p.lon),y:Y(+p.lat),why:p.why?String(p.why):"",km:hav(clat,clon,+p.lat,+p.lon)}))
+    .map(p=>Object.assign(p,{dist:distTxt(p.km)})).sort((a,b)=>a.km-b.km);
+  return {title:"Around you in "+(loc.city||d.city||"your area"),gen:true,me:{x:X(clon),y:Y(clat)},list};
+}
+function normRides(d){
+  const cur=String(d.currency||"").toUpperCase().slice(0,3)||"USD", cols=["#2B6A8A","#B8234A","#2C7A4D","#A86A12","#5A6863"];
+  const rs=(Array.isArray(d.rides)?d.rides:[]).filter(r=>r&&typeof r.name==="string").slice(0,5).map((r,i)=>{const m=(r.name+" "+(r.mode||"")).toLowerCase();
+    return {id:"g"+i,n:r.name,c:cols[i%cols.length],v:String(r.mode||""),eta:Math.round(+r.eta||0),p:Math.max(0,+r.price||0),cur,comfort:/walk|bike|scooter/.test(m)?1:/bus|metro|transit|train|subway|tram|tuk|rickshaw/.test(m)?2:3,lug:String(r.note||"")}});
+  if(!rs.length)return null;
+  const cand=rs.filter(r=>r.comfort>1&&r.eta<=25).sort((a,b)=>a.p-b.p)[0]||rs[0]; cand.pick=true; cand.why="Best balance of price and time for this trip.";
+  return {sub:`Scout compares ways to get around ${loc.city||"your area"} that actually operate there. You choose the mode.`,note:"Prices are Scout's estimates. Booking inside Basecamp depends on partner agreements; until then Scout hands off to the ride app with the trip pre-filled.",from:"",to:"",meta:[],list:rs};
+}
+let genSeq=0;
+async function generateNearby(){
+  const seq=++genSeq; NEAR=null;RIDE=null;selPlace=null;setCountry();
+  const where=loc.city?`${loc.city}${loc.country?", "+loc.country:""}`:"";
+  $("#nearbynote").innerHTML=`<div class="loading">Scout is finding things to do near ${esc(where||"you")}…</div>`;
+  renderNearby();renderRides();
+  let sample=null; try{sample=window.claude?await window.claude.use("sample"):null}catch(e){}
+  const fallback=msg=>{if(seq!==genSeq)return;const city=country==="np"?"Pokhara":"New York";const same=new RegExp(city,"i").test(where);
+    $("#nearbynote").innerHTML=`<div class="note">${esc(msg)}${same?"":" Showing sample places in "+city+" instead."} <button class="btn sm" type="button" id="retrygen" style="margin-left:6px">Try again</button></div>`;
+    $("#retrygen").onclick=generateNearby; renderNearby();renderRides()};
+  if(!sample)return fallback("Live suggestions need Scout, which isn't available in this view.");
+  const now=new Date();
+  const prompt=`You are Scout, the local-guide agent inside the Basecamp adventure travel app. The traveler is ${where?"in "+where:"near"}${loc.lat!=null?` at coordinates ${(+loc.lat).toFixed(3)}, ${(+loc.lon).toFixed(3)}`:""}. Today is ${now.toDateString()}.
+Return ONLY JSON in exactly this shape:
+{"city":string,"country":string,"lat":number,"lon":number,"currency":"3-letter ISO code","places":[{"name":string,"type":"event" or "place","category":string,"when":string,"price":number,"lat":number,"lon":number,"why":string}],"rides":[{"name":string,"mode":string,"price":number,"eta":number,"note":string}]}
+Rules:
+- Top-level lat/lon: the traveler's position (the given coordinates if any, otherwise the city centre).
+- places: 8 items within about 15 km: 3 of type "event" and 5 of type "place". Places must be real, well-known attractions, viewpoints, parks, heritage sites, markets or adventure spots, with approximate real coordinates. Mix categories.
+- Events: recurring or typical things happening in the evening or this week (for example "Live music in Thamel bars, most evenings"). Never invent specific dated events, performers or ticket counts.
+- when: short opening hours or typical timing. price: typical entry price in the local currency, 0 if free. why: one short sentence on why it suits an adventure traveler now.
+- rides: 4 or 5 ways to get around that really operate in this city (ride apps, taxis, public transit, bike or scooter share, walking) for a trip of about 3 km. price in local currency, eta in minutes, note under 8 words.`;
+  try{const d=await sample.json(prompt,{modelTier:"default"}); if(seq!==genSeq)return;
+    if(!loc.city&&d.city){loc.city=String(d.city);loc.country=String(d.country||"");showLoc();setCountry()}
+    if(loc.lat==null&&isFinite(+d.lat)){loc.lat=+d.lat;loc.lon=+d.lon}
+    if(!loc.country&&d.country){loc.country=String(d.country);showLoc();setCountry()}
+    NEAR=normalize(d); RIDE=normRides(d); selPlace=NEAR.list[0];
+    $("#nearbynote").innerHTML=`<div class="note">Suggestions generated by Scout for ${esc(loc.city||"your area")}. Times and prices are typical, so check before you go.</div>`;
+    renderNearby();renderRides();
+  }catch(e){fallback(e&&e.code==="not_granted"?"You didn't allow Scout to generate suggestions.":e&&e.code==="rate_limited"?"Scout is busy right now.":"Scout couldn't generate suggestions for this place.")}
+}
+$("#locchip").onclick=()=>{const f=$("#locform");f.hidden=!f.hidden;$("#locchip").setAttribute("aria-expanded",!f.hidden);if(!f.hidden)$("#locin").focus()};
+$("#locform").onsubmit=e=>{e.preventDefault();const v=$("#locin").value.trim();if(!v)return;const p=v.split(",");loc={city:p[0].trim(),country:(p[1]||"").trim(),lat:null,lon:null,src:"set by you"};$("#locform").hidden=true;$("#locchip").setAttribute("aria-expanded","false");showLoc();generateNearby();location.hash="nearby"};
+$("#locdetect").onclick=()=>{$("#locform").hidden=true;detect(true)};
+detect(false);
+
+/* ---------- WALLET ---------- */
+const tickets=[
+ {kind:"Permit",col:"var(--ok)",t:"ACAP entry permit",sub:"Annapurna Conservation Area",kv:[["Holder","Asha Shrestha"],["Valid","Oct 7 – Nov 30, 2026"],["Permit no.","ACAP-26-118204"]],qr:"BC|ACAP-26-118204|ASHRESTHA|sig:7f3a"},
+ {kind:"Permit",col:"var(--ok)",t:"TIMS card",sub:"Trekkers' Information Management System",kv:[["Holder","Asha Shrestha"],["Route","Poon Hill · Ghorepani"],["Card no.","TIMS-0982211"]],qr:"BC|TIMS-0982211|ASHRESTHA|sig:2c91"},
+ {kind:"Ride",col:"var(--warn)",t:"Jeep, Nayapul → Pokhara",sub:"Oct 11 · 13:00 · Annapurna Trails Co.",kv:[["Seats","2 of 7"],["Driver","Bishnu K. · GA 1 JA 4402"],["Paid","NPR 2,400 via eSewa"]],qr:"BC|RIDE-55102|2PAX|sig:a1b0"},
+ {kind:"Event",col:"var(--accent)",t:"Bhaktapur Durbar Square",sub:"Oct 13 · heritage entry · 2 adults",kv:[["Ticket","BKT-778120"],["Ride there","Pathao car, 07:30"],["Paid","NPR 3,000 via Khalti"]],qr:"BC|BKT-778120|2AD|sig:c4d2"},
+ {kind:"Insurance",col:"var(--glacier)",t:"Rescue cover, high days",sub:"Helicopter evacuation up to 6,000 m",kv:[["Policy","HX-2026-55190"],["Covers","Oct 8 – Oct 10"],["Hotline","+977 1 •••• 112"]],qr:"BC|HX-2026-55190|sig:91fe"},
+ {kind:"Passport",col:"var(--muted)",t:"Passport copy",sub:"Stored encrypted on this device",kv:[["Name","Asha Shrestha"],["Number","•••••4821"],["Expires","Mar 2031"]],qr:null}
+];
+function renderTickets(){
+  $("#tickets").innerHTML=tickets.map((t,i)=>`<div class="ticket"><div class="body"><span class="kind" style="color:${t.col}">${t.kind}</span><h3>${esc(t.t)}</h3><p class="small muted">${esc(t.sub)}</p><dl class="kv" style="margin-top:6px">${t.kv.map(k=>`<dt>${k[0]}</dt><dd>${esc(k[1])}</dd>`).join("")}</dl></div>
+    <div class="stub">${t.qr?`<div class="qr" id="qr${i}" aria-label="QR code for ${esc(t.t)}"></div>`:'<span class="small muted" style="text-align:center">Show at hotel or checkpoint</span>'}</div></div>`).join("");
+  tickets.forEach((t,i)=>{if(!t.qr)return;const el=$("#qr"+i);try{new QRCode(el,{text:t.qr,width:92,height:92,colorDark:"#14201C",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M})}catch(e){el.textContent="QR"}});
+}
+function addTicket(s){tickets.unshift({kind:"Event",col:"var(--accent)",t:s.n,sub:s.when,kv:[["Distance",s.dist],["Price",priceTxt(s)],["Status","Sample booking"]],qr:"BC|"+s.id+"|sig:demo"});renderTickets()}
+renderTickets();
+
+/* ---------- SAFETY ---------- */
+const cps=[["ok","Nayapul trailhead","1,070 m · Oct 7, 08:40","Checked in"],["ok","Tikhedhunga teahouse","1,540 m · Oct 7, 15:10","Checked in"],["ok","Ulleri","2,010 m · Oct 8, 09:48","Checked in"],["next","Ghorepani","2,874 m · due by 16:00","Next"],["","Poon Hill summit","3,210 m · Oct 9, 06:00","Planned"],["","Tadapani","2,630 m · Oct 9, 14:00","Planned"]];
+$("#checkpoints").innerHTML=cps.map(c=>`<div class="cp ${c[0]}"><i></i><div><b class="small">${c[1]}</b><div class="small muted">${c[2]}</div></div><span class="pill ${c[0]==="ok"?"ok":c[0]==="next"?"acc":"plain"}">${c[3]}</span></div>`).join("")+
+ `<p class="small muted">If you miss a checkpoint by 2 hours, Scout messages you, then your guide, then starts SOS escalation.</p>`;
+function fam(m){$$("#famseg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  $("#fampreview").innerHTML=m==="calm"?'<b>What they see:</b> “Asha is safe and on track. Last check-in Ulleri at 9:48. Next stop Ghorepani by 16:00.”':'<b>What they see:</b> Live map position, updated every 15 minutes when there is signal, last satellite ping otherwise.'}
+$$("#famseg button").forEach(b=>b.onclick=()=>fam(b.dataset.m)); fam("calm");
+function sym(){let s=0;$$("#sym input:checked").forEach(c=>s+=+c.value);const o=$("#symout");
+  o.innerHTML=s===0?'<span class="pill ok">All clear</span> No symptoms today. Keep drinking 3–4 L of water.':s<3?'<span class="pill warn">Mild</span> Common at this height. Rest, hydrate, and don’t go higher today. Scout will check again tonight.':'<span class="pill crit">Serious</span> These can be signs of altitude sickness. Descend now and tell your guide. Scout has alerted Pemba (prototype: no message sent).'}
+$$("#sym input").forEach(c=>c.onchange=sym); sym();
+(function sos(){const btn=$("#sos"),ring=$("#sosring"),steps=$$("#esc div");let t0=0,raf=0,fired=false;
+  const reset=()=>{cancelAnimationFrame(raf);ring.style.strokeDashoffset=502;if(!fired)$("#soslabel").textContent="Hold 3 seconds"};
+  const tick=()=>{const p=Math.min(1,(performance.now()-t0)/3000);ring.style.strokeDashoffset=502*(1-p);if(p<1)raf=requestAnimationFrame(tick);else{fired=true;$("#soslabel").textContent="Escalating…";steps.forEach((s,i)=>setTimeout(()=>s.classList.add("go"),i*700));toast("Prototype: SOS escalation shown. No alert was sent.");setTimeout(()=>{fired=false;steps.forEach(s=>s.classList.remove("go"));reset()},6000)}};
+  const down=e=>{e.preventDefault();if(fired)return;t0=performance.now();raf=requestAnimationFrame(tick)};
+  btn.addEventListener("pointerdown",down);["pointerup","pointerleave","pointercancel"].forEach(ev=>btn.addEventListener(ev,()=>{if(!fired)reset()}));
+  btn.addEventListener("keydown",e=>{if((e.key===" "||e.key==="Enter")&&!e.repeat&&!fired){e.preventDefault();t0=performance.now();raf=requestAnimationFrame(tick)}});
+  btn.addEventListener("keyup",()=>{if(!fired)reset()});
+})();
+
+route();
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Basecamp Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: app shell. Sidebar nav (traveler + operator) on wide screens, scrolling tab strip on phones; each view is a grid of working panels. */
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface-2:#E7ECE9; --ink:#14201C; --muted:#5A6863; --line:#D3DBD7;
+  --accent:#B8234A; --accent-soft:#F7E1E7; --accent-ink:#FFFFFF;
+  --glacier:#2B6A8A; --glacier-soft:#DDEBF2;
+  --ok:#2C7A4D; --ok-soft:#DCEFE3; --warn:#A86A12; --warn-soft:#F6EAD3; --crit:#B83227; --crit-soft:#F7DEDA;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --f-data:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px; --r-sm:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1D2723; --ink:#E4EBE7; --muted:#91A099; --line:#2A3631;
+  --accent:#EC5C83; --accent-soft:#3A1A24; --accent-ink:#1A0A10;
+  --glacier:#6DB2D4; --glacier-soft:#16303C;
+  --ok:#5BC48A; --ok-soft:#163223; --warn:#E3AA4E; --warn-soft:#352812; --crit:#F2715F; --crit-soft:#3A1915;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1D2723; --ink:#E4EBE7; --muted:#91A099; --line:#2A3631;
+  --accent:#EC5C83; --accent-soft:#3A1A24; --accent-ink:#1A0A10;
+  --glacier:#6DB2D4; --glacier-soft:#16303C;
+  --ok:#5BC48A; --ok-soft:#163223; --warn:#E3AA4E; --warn-soft:#352812; --crit:#F2715F; --crit-soft:#3A1915;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.6rem,2.6vw,2.1rem);letter-spacing:-.01em}
+h2{font-size:1.15rem}
+h3{font-size:1rem;font-weight:500}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--glacier);outline-offset:2px}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.small{font-size:.85rem}
+
+/* shell */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.side{border-right:1px solid var(--line);background:var(--surface);padding:20px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand svg{flex:none}
+.brand b{font-family:var(--f-display);font-size:1.3rem;letter-spacing:-.01em}
+.brand small{display:block;font-size:.72rem;color:var(--muted);line-height:1.2}
+.navgroup{display:flex;flex-direction:column;gap:2px}
+.navgroup .label{padding:0 10px 6px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);color:var(--ink);text-decoration:none;font-weight:500}
+.nav a svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav a:hover{background:var(--surface-2)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.side .foot{margin-top:auto;font-size:.78rem;color:var(--muted);padding:0 10px}
+main{min-width:0;padding-inline:clamp(16px,3vw,36px);padding-block:18px 96px}
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.proto{font-size:.8rem;background:var(--warn-soft);color:var(--warn);padding:5px 10px;border-radius:99px;font-weight:600}
+.topbar .grow{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:.85rem;font-weight:500}
+select.chip{appearance:none;padding-right:28px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.locbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.locbox .chip svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:2}
+.locform{display:flex;gap:6px;flex-wrap:wrap}
+.locform[hidden]{display:none}
+.locform input{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:5px 10px;min-width:0;width:220px;max-width:100%}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;padding:8px 0}
+.loading::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.note{font-size:.82rem;color:var(--muted);background:var(--surface-2);border-radius:var(--r-sm);padding:8px 10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--glacier);color:var(--surface);display:grid;place-items:center;font-weight:600;font-size:.85rem}
+.view{display:none}
+.view.on{display:block}
+.vhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.vhead p{color:var(--muted);max-width:62ch;margin-top:6px}
+
+/* building blocks */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+.g2e{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.panel>h2{margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:8px 14px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ink{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:.82rem}
+.btn:disabled{opacity:.5;cursor:default}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.info{background:var(--glacier-soft);color:var(--glacier)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.plain::before{display:none}
+.list{display:flex;flex-direction:column}
+.list>*{padding-block:11px;border-top:1px solid var(--line)}
+.list>*:first-child{border-top:0;padding-top:0}
+.list>*:last-child{padding-bottom:0}
+.toggle{position:relative;width:40px;height:22px;flex:none}
+.toggle input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
+.toggle span{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:background .2s}
+.toggle span::after{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:var(--surface);transition:transform .2s}
+.toggle input:checked+span{background:var(--ok)}
+.toggle input:checked+span::after{transform:translateX(18px)}
+.toggle input:focus-visible+span{outline:2px solid var(--glacier);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 12px;font-size:.84rem;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:0 10px 8px 0;white-space:nowrap}
+td{padding:9px 10px 9px 0;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+td.wrap{white-space:normal}
+
+/* Plan with Scout */
+.chat{display:flex;flex-direction:column;height:min(640px,78vh)}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px}
+.msg{max-width:88%;padding:10px 14px;border-radius:14px;font-size:.93rem}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--bg);border-bottom-right-radius:4px}
+.msg.scout{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:4px}
+.msg.scout .who{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+.msg ul{margin:6px 0 0;padding-left:18px}
+.msg a{color:var(--glacier);font-weight:600}
+.msg.me a{color:inherit}
+.composer{display:flex;gap:8px;margin-top:12px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:var(--r-sm);padding:10px 12px}
+.suggest{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.suggest button{border:1px dashed var(--line);background:none;border-radius:99px;padding:4px 10px;font-size:.8rem;color:var(--muted)}
+.suggest button:hover{color:var(--ink);border-color:var(--muted)}
+.check{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center}
+.check .ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.check .ic svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.check.done .ic{background:var(--ok-soft);color:var(--ok)}
+.check .t{font-weight:600;font-size:.92rem}
+.check .d{font-size:.8rem;color:var(--muted)}
+.check .p{text-align:right;font-size:.88rem}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;margin-top:6px;border-top:2px solid var(--ink)}
+.total b{font-family:var(--f-display);font-size:1.6rem}
+.limitbar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:6px}
+.limitbar i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:.84rem}
+.rules ul{margin:6px 0 0;padding-left:16px;color:var(--muted)}
+
+/* Trips */
+.daystrip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:4px}
+.day{border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;font-size:.8rem;background:var(--surface)}
+.day b{display:block;font-size:.88rem}
+.day.past{background:var(--surface-2);color:var(--muted)}
+.day.now{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.profile{width:100%;height:auto;display:block;margin-top:14px}
+.profile text{font-family:var(--f-data);font-size:10px;fill:var(--muted)}
+.profile .ln{stroke:var(--ink);fill:none;stroke-width:2}
+.profile .ar{fill:var(--glacier-soft)}
+.profile .gr{stroke:var(--line);stroke-width:1}
+.profile .done{stroke:var(--accent);stroke-width:2.5;fill:none}
+.profile .pt{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.profile .you{fill:var(--accent)}
+.approval{border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--r-sm);padding:12px}
+.approval.resolved{border-color:var(--line);background:var(--surface-2)}
+.log{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;font-size:.88rem}
+.log time{font-family:var(--f-data);font-size:.78rem;color:var(--muted);padding-top:2px}
+.tripcard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;cursor:pointer;text-align:left;width:100%;background:none;border:0;padding:0}
+.tripcard[aria-pressed="true"] .tn{color:var(--accent)}
+.tn{font-weight:600}
+
+/* Rides */
+.route{display:grid;grid-template-columns:14px minmax(0,1fr);gap:2px 10px;align-items:center;font-size:.92rem}
+.route i{width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);justify-self:center}
+.route i.to{background:var(--accent);border-color:var(--accent);border-radius:2px}
+.route .ln{width:2px;height:16px;background:var(--line);justify-self:center}
+.ride{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.ride.pick{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.ride.chosen{background:var(--ok-soft)}
+.logo{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;font-family:var(--f-display)}
+.ride .price{text-align:right}
+.ride .price b{font-family:var(--f-data);font-size:1.05rem;display:block}
+.meter{display:flex;gap:2px}
+.meter i{width:8px;height:8px;border-radius:2px;background:var(--line)}
+.meter i.on{background:var(--glacier)}
+.offer{display:flex;gap:6px;align-items:center;margin-top:6px}
+.offer input{width:110px;border:1px solid var(--line);background:var(--bg);border-radius:var(--r-sm);padding:4px 8px}
+
+/* Nearby */
+.map{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:var(--r);overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+.map svg.base{position:absolute;inset:0;width:100%;height:100%}
+.map .water{fill:var(--glacier-soft);stroke:var(--glacier);stroke-width:1}
+.map .road{stroke:var(--surface);stroke-width:5;fill:none}
+.map .contour{stroke:var(--line);fill:none;stroke-width:1}
+.map .maplabel{font-family:var(--f-data);font-size:11px;fill:var(--muted)}
+.pin{position:absolute;transform:translate(-50%,-100%);border:0;background:none;padding:0}
+.pin span{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--glacier);border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.pin.ev span{background:var(--accent)}
+.pin[aria-pressed="true"] span{outline:3px solid var(--ink)}
+.me-dot{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--ink);border:3px solid var(--surface);transform:translate(-50%,-50%);box-shadow:0 0 0 6px color-mix(in srgb,var(--ink) 18%,transparent)}
+.place{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:start;text-align:left;background:none;border:0;padding-inline:0;width:100%}
+.place .t{font-weight:600}
+.place[aria-pressed="true"] .t{color:var(--accent)}
+.why{font-size:.82rem;color:var(--glacier);margin-top:2px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:.82rem;font-weight:600;color:var(--muted)}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Tickets */
+.ticket{display:grid;grid-template-columns:minmax(0,1fr) 128px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.ticket .body{padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ticket .stub{border-left:2px dashed var(--line);display:grid;place-items:center;padding:10px;background:var(--surface)}
+.qr{width:104px;height:104px;background:#fff;padding:6px;border-radius:6px;display:grid;place-items:center}
+.qr img,.qr canvas{width:92px!important;height:92px!important}
+.ticket .kind{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.ticket h3{font-family:var(--f-display);font-weight:700;font-size:1.05rem}
+
+/* Safety */
+.sosbox{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.sos{width:150px;height:150px;border-radius:50%;border:0;background:var(--crit);color:#fff;font-family:var(--f-display);font-size:1.6rem;font-weight:700;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+.sos small{display:block;font-family:var(--f-body);font-size:.75rem;font-weight:500;opacity:.9}
+.sos svg{position:absolute;inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px);transform:rotate(-90deg);pointer-events:none}
+.sos circle{fill:none;stroke:var(--crit);stroke-width:5;stroke-dasharray:502;stroke-dashoffset:502}
+.esc{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left}
+.esc div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:var(--r-sm);background:var(--surface-2);font-size:.86rem}
+.esc div.go{background:var(--crit-soft);color:var(--crit);font-weight:600}
+.cp{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:start}
+.cp i{width:12px;height:12px;border-radius:50%;margin-top:5px;border:2px solid var(--muted)}
+.cp.ok i{background:var(--ok);border-color:var(--ok)}
+.cp.next i{border-color:var(--accent);background:var(--accent-soft)}
+.sym{display:flex;gap:6px;flex-wrap:wrap}
+.sym label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:.84rem;cursor:pointer}
+.sym input{accent-color:var(--accent)}
+
+/* Operator */
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi b{font-family:var(--f-display);font-size:1.7rem;letter-spacing:-.01em}
+.kpi .d{font-size:.8rem}
+.up{color:var(--ok)} .down{color:var(--crit)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .dh{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cal .cell{min-height:92px;border:1px solid var(--line);border-radius:var(--r-sm);padding:6px;display:flex;flex-direction:column;gap:4px;background:var(--bg)}
+.cal .cell.today{border-color:var(--accent)}
+.cal .dn{font-family:var(--f-data);font-size:.75rem;color:var(--muted)}
+.bk{font-size:.72rem;border-radius:4px;padding:2px 5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk.trek{background:var(--glacier-soft);color:var(--glacier)}
+.bk.ev{background:var(--accent-soft);color:var(--accent)}
+.bk.ride{background:var(--warn-soft);color:var(--warn)}
+.calwrap{overflow-x:auto}
+.calwrap .cal{min-width:620px}
+.spark{width:100%;height:56px;display:block}
+.spark .a{fill:var(--glacier-soft)} .spark .l{stroke:var(--glacier);stroke-width:2;fill:none} .spark .e{fill:var(--glacier)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--r-sm);font-size:.9rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);z-index:20}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.scoutfab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--accent-ink);border:0;border-radius:99px;padding:12px 18px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:10;display:flex;gap:8px;align-items:center}
+.scoutfab svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+
+@media (max-width:1080px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:sticky;top:env(safe-area-inset-top,0px);height:auto;flex-direction:row;align-items:center;padding:10px 16px;gap:14px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);z-index:5}
+  .side .foot,.navgroup .label,.brand small{display:none}
+  .navgroup{flex-direction:row}
+  .nav a{white-space:nowrap;padding:7px 10px}
+  .g2,.g2e{grid-template-columns:minmax(0,1fr)}
+  .chat{height:auto}
+  .msgs{max-height:60vh}
+}
+@media (max-width:560px){
+  .g3,.g4{grid-template-columns:minmax(0,1fr)}
+  .ride{grid-template-columns:40px minmax(0,1fr);}
+  .ride .price{text-align:left;grid-column:2}
+  .ride .act{grid-column:1/-1}
+  .ticket{grid-template-columns:minmax(0,1fr)}
+  .ticket .stub{border-left:0;border-top:2px dashed var(--line)}
+  .rules{grid-template-columns:1fr}
+  .daystrip{grid-template-columns:repeat(5,minmax(64px,1fr));overflow-x:auto}
+  .scoutfab span{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<style>
+:root{color-scheme:light}
+body{margin:0;font-size:15px}
+[hidden]{display:none!important}
+img{max-width:100%}
+.side .platname{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+</style></head><body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--ink)"/><path d="M5 22 L12 10 L16 16 L19 12 L25 22 Z" fill="var(--bg)"/><path d="M12 10 L14 13.4 L10.3 13 Z" fill="var(--accent)"/></svg>
+      <div><b>Basecamp</b><small class="platname">Platform</small></div>
+    </div>
+    <nav class="navgroup nav" aria-label="Platform">
+      <div class="label">Platform</div>
+      <a href="#v-operator" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5M16 4v5"/></svg>Overview</a>
+      <a href="#groups-panel"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-6 6-6s6 3 6 6M16 11a3 3 0 100-6M21 20c0-2.5-1.5-4.5-4-5.5"/></svg>Groups &amp; payments</a>
+      <a href="#listings-panel"><svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Listings</a>
+      <a href="#commission"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 15h3"/></svg>Commission &amp; payouts</a>
+    </nav>
+    <nav class="navgroup nav" aria-label="Apps">
+      <div class="label">Apps</div>
+      <a href="/"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Traveler portal</a>
+    </nav>
+    <div class="foot">Basecamp platform console for operators and Basecamp staff. Sample data; no real payments.</div>
+  </aside>
+  <main>
+    <div class="topbar"><span class="proto">Prototype · sample data · no real payments</span><span class="grow"></span><div class="avatar" title="Signed in as platform admin (sample)">PA</div></div>
+    <section class="view on" id="v-operator" aria-labelledby="h-operator">
+      <div class="vhead"><div><h1 id="h-operator">Annapurna Trails Co.</h1><p>Platform console · operator view for Lakeside, Pokhara · verified operator, safety rating 4.8</p></div>
+        <div class="row"><button class="btn" type="button" id="newlisting">Add event or attraction</button><button class="btn ink" type="button" id="exportbtn">New group trip</button></div></div>
+      <div class="grid g4">
+        <div class="panel kpi"><span class="label">Bookings this week</span><b class="num">38</b><span class="d up">+9 vs last week</span></div>
+        <div class="panel kpi"><span class="label">Revenue, October</span><b class="num">NPR 1.42M</b><span class="d up">+18% vs September</span></div>
+        <div class="panel kpi"><span class="label">Guides on trail now</span><b class="num">7 / 11</b><span class="d muted">All checked in today</span></div>
+        <div class="panel kpi"><span class="label">Payouts pending</span><b class="num">NPR 186,400</b><span class="d muted">Next payout Oct 10</span></div>
+      </div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="panel"><h2><span>Bookings · Oct 5–11</span><span class="row small"><span class="bk trek">Trek</span><span class="bk ev">Event</span><span class="bk ride">Transfer</span></span></h2>
+          <div class="calwrap"><div class="cal" id="cal"></div></div></div>
+        <div class="panel"><h2>Bookings per day, last 30 days</h2>
+          <svg class="spark" id="spark" viewBox="0 0 300 56" preserveAspectRatio="none" role="img" aria-label="Daily bookings trend, last 30 days, rising from 3 to 8"></svg>
+          <div class="row between small muted"><span>Sep 9</span><span class="num">Today: 8</span></div>
+          <h2 style="margin-top:18px">Guide schedule</h2>
+          <div class="list small" id="guides"></div>
+        </div>
+      </div>
+      <div class="grid g2e" style="margin-top:16px">
+        <div class="panel" id="groups-panel"><h2>Groups</h2><div class="tablewrap"><table id="groups"></table></div></div>
+        <div class="panel"><h2>Payments</h2><div class="tablewrap"><table id="payments"></table></div></div>
+      </div>
+      <div class="panel" style="margin-top:16px" id="listings-panel"><h2>Your event and attraction listings</h2><div class="tablewrap"><table id="listings"></table></div></div>
+      <div class="panel" style="margin-top:16px" id="commission">
+        <h2><span>Basecamp commission and settlement</span><span class="pill warn">Not live: needs eSewa merchant API</span></h2>
+        <div class="grid g2">
+          <div class="stack">
+            <p class="small"><b>Rule:</b> all Basecamp commission and fees, from every revenue stream, are deposited to eSewa 9768786270. There is no other payout destination.</p>
+            <p class="small muted">Booking commission is taken from each paid booking; the operator receives the rest. Rates follow the concept's commission plan (8–15%) and can be adjusted here.</p>
+            <div class="tablewrap"><table id="rates"></table></div>
+          </div>
+          <div class="stack">
+            <dl class="kv">
+              <dt>Applies to</dt><dd>All revenue streams below</dd>
+              <dt>Deposit to</dt><dd><b>eSewa · <span class="num">9768786270</span></b></dd>
+              <dt>Account holder</dt><dd>Basecamp (to be verified)</dd>
+              <dt>Schedule</dt><dd>Daily at 18:00 NPT, for bookings paid that day</dd>
+              <dt>Minimum transfer</dt><dd class="num">NPR 100</dd>
+              <dt>Refunds</dt><dd>Commission reversed on cancelled bookings</dd>
+            </dl>
+            <div class="total"><span class="label">Commission due today</span><b class="num" id="commtotal">NPR 0</b></div>
+            <p class="small muted" id="commsplit"></p>
+            <div class="note">Prototype: no money moves. Going live needs an eSewa merchant account with payout (ePay) API access, a server to hold the credentials, and verification that 9768786270 is Basecamp's registered business wallet.</div>
+          </div>
+        </div>
+        <h2 style="margin-top:20px">Revenue streams routed to eSewa 9768786270</h2>
+        <div class="tablewrap"><table id="streams"></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const npr=n=>"NPR "+Math.round(n).toLocaleString("en-US");
+let toastT; function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("on"),2800)}
+$$(".nav a[href^='#']").forEach(a=>a.addEventListener("click",()=>{$$(".nav a").forEach(x=>x.removeAttribute("aria-current"));a.setAttribute("aria-current","page")}));
+/* ---------- OPERATOR ---------- */
+(function cal(){const dn=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],dates=[5,6,7,8,9,10,11];
+  const bk={5:[["trek","Mardi Himal · 6 pax"]],6:[["ride","Airport pickup · 2"],["trek","ABC · 4 pax"]],7:[["trek","Poon Hill · 2 pax"],["ride","Nayapul jeep · 2"]],8:[["trek","Ghandruk · 8 pax"],["ev","Cultural dance · 24"],["ride","Kande jeep · 4"]],9:[["ev","Sunrise walk · 10"],["trek","Khopra Ridge · 3"]],10:[["trek","Mardi Himal · 5 pax"],["ev","Cooking class · 8"]],11:[["ride","Nayapul jeep · 2"],["ev","Cultural dance · 31"]]};
+  $("#cal").innerHTML=dn.map(d=>`<div class="dh">${d}</div>`).join("")+dates.map(d=>`<div class="cell ${d===8?"today":""}"><span class="dn">Oct ${d}</span>${(bk[d]||[]).map(b=>`<span class="bk ${b[0]}" title="${b[1]}">${b[1]}</span>`).join("")}</div>`).join("")})();
+(function spark(){const v=[3,4,3,5,4,4,6,5,3,4,5,6,5,7,6,5,6,7,6,8,7,6,7,9,8,7,8,9,7,8];const W=300,H=56,max=10;
+  const x=i=>i*W/(v.length-1),y=n=>H-4-n/max*(H-8);const d=v.map((n,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(n).toFixed(1)}`).join(" ");
+  $("#spark").innerHTML=`<path class="a" d="${d} L${W},${H} L0,${H} Z"/><path class="l" d="${d}" vector-effect="non-scaling-stroke"/><circle class="e" cx="${x(v.length-1)}" cy="${y(v[v.length-1])}" r="3.5"/>`})();
+$("#guides").innerHTML=[["Pemba Gurung","Poon Hill · day 2 of 5","ok","On trail"],["Suman Thapa","Mardi Himal · starts Oct 10","info","Next trip"],["Kamala Pun","Ghandruk · 8 pax · day 1","ok","On trail"],["Dawa Sherpa","Rest day","plain","Available"]].map(g=>`<div class="row between"><div><b>${g[0]}</b><div class="muted">${g[1]}</div></div><span class="pill ${g[2]}">${g[3]}</span></div>`).join("");
+$("#groups").innerHTML=`<tr><th>Group</th><th>Route</th><th>Pax</th><th>Waivers</th><th>Status</th></tr>`+[["Shrestha ×2","Poon Hill","2","2/2","ok","On trail"],["Lindqvist family","Ghandruk","8","7/8","warn","1 missing"],["Kathmandu Uni hiking club","Mardi Himal","5","5/5","info","Starts Oct 10"],["Ortega ×3","Khopra Ridge","3","3/3","info","Starts Oct 9"]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td><span class="pill ${r[4]}">${r[5]}</span></td></tr>`).join("");
+const RATES=[{k:"trek",n:"Treks and packages",r:12},{k:"guide",n:"Guides and stays",r:10},{k:"event",n:"Event and attraction tickets",r:8},{k:"ride",n:"Transfers and jeeps",r:8},{k:"corp",n:"Corporate packages",r:15}];
+const PAYS=[["Oct 8","Lindqvist family","Card",62400,"trek","ok","Paid"],["Oct 8","Dance show tickets","Khalti",19200,"event","ok","Paid"],["Oct 8","Nayapul jeep · 2","eSewa",2400,"ride","ok","Paid"],["Oct 7","Shrestha ×2","eSewa",34800,"trek","ok","Paid"],["Oct 6","Uni hiking club","Bank",41000,"trek","warn","Deposit only"],["Oct 5","Ortega ×3","Card",28900,"guide","info","Payout Oct 10"]];
+const rateOf=k=>RATES.find(r=>r.k===k).r;
+function renderComm(){
+  $("#payments").innerHTML=`<tr><th>Date</th><th>From</th><th>Method</th><th style="text-align:right">Amount</th><th style="text-align:right">Commission</th><th>Status</th></tr>`+PAYS.map(r=>`<tr><td class="num">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num" style="text-align:right">${npr(r[3])}</td><td class="num" style="text-align:right">${npr(r[3]*rateOf(r[4])/100)} <span class="muted">(${rateOf(r[4])}%)</span></td><td><span class="pill ${r[5]}">${r[6]}</span></td></tr>`).join("");
+  const today=PAYS.filter(r=>r[0]==="Oct 8"), gross=today.reduce((a,r)=>a+r[3],0), comm=today.reduce((a,r)=>a+r[3]*rateOf(r[4])/100,0);
+  $("#commtotal").textContent=npr(comm);
+  $("#commsplit").textContent=`From ${npr(gross)} paid today: ${npr(comm)} to Basecamp's eSewa, ${npr(gross-comm)} to Annapurna Trails Co.`;
+}
+$("#rates").innerHTML=`<tr><th>Booking type</th><th style="text-align:right">Rate</th></tr>`+RATES.map((r,i)=>`<tr><td>${r.n}</td><td style="text-align:right"><input id="rate-${r.k}" type="number" min="0" max="30" step="0.5" value="${r.r}" class="num" style="width:70px;border:1px solid var(--line);background:var(--bg);border-radius:var(--r-sm);padding:3px 6px;text-align:right" aria-label="${r.n} commission rate"> %</td></tr>`).join("");
+RATES.forEach(r=>$("#rate-"+r.k).oninput=e=>{const v=parseFloat(e.target.value);if(isFinite(v)&&v>=0&&v<=30){r.r=v;renderComm()}});
+renderComm();
+$("#streams").innerHTML=`<tr><th>Stream</th><th>Basecamp keeps</th><th>Collected from</th><th>Deposited to</th></tr>`+[
+ ["Booking commission","8–15% by booking type (table above)","Each paid booking, before operator payout"],
+ ["Event and attraction tickets","8% of ticket price","Each ticket sold in the app"],
+ ["Promoted events","100% of promotion fee (price not set in concept)","Venues and organizers"],
+ ["Premium subscription","100% of subscription (price not set in concept)","Travelers, monthly"],
+ ["Operator software","100% of plan fee (tiers not set in concept)","Agencies and teahouses"],
+ ["Partner referrals","100% of affiliate share","Ride apps, gear rental, insurance partners"],
+ ["Corporate packages","15% package margin","Corporate clients, per invoice"]
+].map(r=>`<tr><td><b>${r[0]}</b></td><td class="wrap">${r[1]}</td><td class="wrap">${r[2]}</td><td><span class="pill ok">eSewa · 9768786270</span></td></tr>`).join("");
+$("#listings").innerHTML=`<tr><th>Listing</th><th>Type</th><th>Next date</th><th>Price</th><th style="text-align:right">Views (7d)</th><th style="text-align:right">Booked</th><th>Status</th></tr>`+[["Gurung cultural dance show","Event","Tonight 18:30","NPR 800","1,284","24 / 40","acc","Promoted"],["Sarangkot sunrise walk","Attraction","Oct 9, 05:00","NPR 1,200","642","10 / 15","ok","Live"],["Nepali cooking class","Event","Oct 10, 16:00","NPR 2,500","388","8 / 12","ok","Live"],["Begnas Lake kayaking","Attraction","Oct 14","NPR 3,000","51","0 / 8","warn","Check hours"]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td><td class="num" style="text-align:right">${r[4]}</td><td class="num" style="text-align:right">${r[5]}</td><td><span class="pill ${r[6]}">${r[7]}</span></td></tr>`).join("");
+$("#newlisting").onclick=()=>toast("Prototype: opens the listing form for events and attractions.");
+$("#exportbtn").onclick=()=>toast("Prototype: opens the group trip builder.");
+
+})();
+</script>
+</body></html>
