@@ -323,7 +323,7 @@ td.wrap{white-space:normal}
         <form id="locform" class="locform" hidden>
           <input id="locin" placeholder="City, e.g. Kathmandu or Tokyo" autocomplete="off" aria-label="Your city">
           <button class="btn sm ink" type="submit">Set</button>
-          <button class="btn sm" type="button" id="locdetect">Use my device</button>
+          <button class="btn sm" type="button" id="locdetect">Use my live location</button>
         </form>
       </div>
       <div class="avatar" title="Signed in as Asha (sample traveler)">AS</div>
@@ -502,7 +502,7 @@ td.wrap{white-space:normal}
       <div class="panel" style="margin-top:16px">
         <h2>Alerts on your route</h2>
         <div class="grid g3 small">
-          <div class="stack"><span class="pill warn">Weather</span><p>Afternoon cloud and light rain from 14:00 near Ghorepani. Poon Hill sunrise tomorrow looks clear (5:45 AM).</p></div>
+          <div class="stack" id="wxcard"><span class="pill warn">Weather</span><p>Afternoon cloud and light rain from 14:00 near Ghorepani. Poon Hill sunrise tomorrow looks clear (5:45 AM).</p></div>
           <div class="stack"><span class="pill info">Trail</span><p>Stone steps above Ulleri are slippery after rain. Reported by 3 trekkers in the last 48 hours.</p></div>
           <div class="stack"><span class="pill ok">Road</span><p>Nayapul to Pokhara road is open. Your Day 5 jeep is confirmed for 13:00.</p></div>
         </div>
@@ -639,9 +639,10 @@ const RIDES={
    {id:"walk",n:"Walk",c:"#5A6863",v:"On foot",eta:34,p:0,comfort:1,lug:"Mostly lit avenues",usd:true}]}
 };
 let chosenRide=null;
-function money(r){return r.p?fmt(r.cur||(r.usd?"USD":"NPR"),r.p):"Free"}
+function money(r){return r.p==null?"Fare in app":r.p?fmt(r.cur||(r.usd?"USD":"NPR"),r.p):"Free"}
 function renderRides(){
   let R=RIDE||RIDES[country]; chosenRide=null;
+  if(R.live){const km=selPlace&&selPlace.km!=null?selPlace.km:3;R.list.forEach(r=>{r.eta=Math.max(1,Math.round(km*r.k+r.b))})}
   if(NEAR&&selPlace){R=Object.assign({},R,{from:"Your location, "+(loc.city||"current position"),to:selPlace.n,meta:[["Distance",selPlace.dist.split(" · ")[0]],["Pay with",country==="np"?"eSewa, Khalti or card":"Card, Apple Pay, Google Pay or local wallet"],["Pickup","Now"]]})}
   $("#ridesub").textContent=R.sub; $("#ridenote").textContent=R.note;
   $("#route").innerHTML=`<i></i><span>${esc(R.from)}</span><span class="ln"></span><span></span><i class="to"></i><b>${esc(R.to)}</b>`;
@@ -681,7 +682,7 @@ const PLACES={
   {id:"rock",type:"place",n:"Top of the Rock observation deck",cat:"Attraction",when:"Open 9:00–24:00",dist:"0.3 mi · 6 min walk",price:40,usd:true,x:56,y:34,why:"Clear skies tonight: good for the skyline view."}]}
 };
 let filter="all", selPlace=null;
-function priceTxt(p){return p.price===0?"Free":fmt(p.cur||(p.usd?"USD":"NPR"),p.price)}
+function priceTxt(p){return p.price==null?"See venue":p.price===0?"Free":fmt(p.cur||(p.usd?"USD":"NPR"),p.price)}
 function renderNearby(){
   const P=NEAR||PLACES[country]; const vis=P.list.filter(p=>filter==="all"||(filter==="free"?p.price===0:p.type===filter));
   if(!selPlace||!P.list.includes(selPlace))selPlace=P.list[0];
@@ -711,14 +712,33 @@ function fromTimezone(){let tz="";try{tz=Intl.DateTimeFormat().resolvedOptions()
   const c=tz.split("/").pop().replace(/_/g," "); return c&&c!=="UTC"?{city:c,country:"",lat:null,lon:null,src:"from your device's time zone"}:{city:"Pokhara",country:"Nepal",lat:28.2096,lon:83.9856,src:"default"}}
 function deviceCoords(){return new Promise(res=>{if(!navigator.geolocation)return res(null);let done=false;const fin=v=>{if(!done){done=true;res(v)}};
   setTimeout(()=>fin(null),6000);try{navigator.geolocation.getCurrentPosition(p=>fin({lat:p.coords.latitude,lon:p.coords.longitude}),()=>fin(null),{enableHighAccuracy:false,timeout:5500,maximumAge:600000})}catch(e){fin(null)}})}
+let watchId=null, manualCity=false, lastFetch=null;
+function stopWatch(){if(watchId!=null&&navigator.geolocation){navigator.geolocation.clearWatch(watchId)}watchId=null}
 async function detect(manual){
-  $("#locname").textContent="Finding you…";$("#locsrc").textContent="";
-  const c=await deviceCoords(); const tz=fromTimezone();
-  if(c){loc={city:null,country:"",lat:c.lat,lon:c.lon,src:"from your device location"};
-    const t=Object.values(TZ).find(v=>Math.abs(v[2]-c.lat)<0.6&&Math.abs(v[3]-c.lon)<0.6); if(t){loc.city=t[0];loc.country=t[1]}}
-  else{loc=tz; if(manual)toast("Your device didn't share its location here, so Scout used your time zone. You can also type a city.")}
-  showLoc();generateNearby();
+  manualCity=false;$("#locname").textContent="Finding you…";$("#locsrc").textContent="";
+  if(!navigator.geolocation||!window.fetch){return tzFallback(manual)}
+  stopWatch();let got=false;
+  const t=setTimeout(()=>{if(!got)tzFallback(manual)},12000);
+  try{watchId=navigator.geolocation.watchPosition(p=>{got=true;clearTimeout(t);onPosition(p.coords)},err=>{if(!got){clearTimeout(t);tzFallback(manual,err)}},{enableHighAccuracy:true,timeout:15000,maximumAge:60000})}catch(e){clearTimeout(t);tzFallback(manual)}
 }
+function tzFallback(manual,err){stopWatch();loc=fromTimezone();
+  if(manual||err&&err.code===1)toast("Location is off for this site, so Basecamp used your time zone. Allow location in your browser, or type a city.");
+  showLoc();generateNearby()}
+async function onPosition(c){
+  if(manualCity)return;
+  const prev=loc&&loc.lat!=null&&loc.live?{lat:loc.lat,lon:loc.lon}:null;
+  loc=Object.assign({},loc,{lat:c.latitude,lon:c.longitude,live:true,src:"live from your device · ±"+Math.round(c.accuracy||0)+" m"});
+  if(!prev||!lastFetch||hav(lastFetch.lat,lastFetch.lon,c.latitude,c.longitude)>1){
+    lastFetch={lat:c.latitude,lon:c.longitude}; await reverseGeocode(); showLoc(); liveLoad();
+  }else{showLoc(); relocateMe()}
+}
+async function reverseGeocode(){
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat=${loc.lat}&lon=${loc.lon}`);const d=await r.json();const a=d.address||{};
+    loc.city=a.city||a.town||a.village||a.municipality||a.county||a.state||"your area";loc.country=a.country||"";loc.cc=(a.country_code||"").toLowerCase()}catch(e){loc.city=loc.city||"your area"}
+  setCountry()}
+async function geocodeCity(q){
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&accept-language=en&q=${encodeURIComponent(q)}`);const d=(await r.json())[0];if(!d)return false;const a=d.address||{};
+    loc={city:a.city||a.town||a.village||d.name||q,country:a.country||"",cc:(a.country_code||"").toLowerCase(),lat:+d.lat,lon:+d.lon,src:"set by you",live:false};setCountry();return true}catch(e){return false}}
 function hav(a,b,c,d){const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function distTxt(km){return (km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km")+" · "+(km<1.5?Math.max(1,Math.round(km/0.08))+" min walk":Math.round(km*3+4)+" min ride")}
 function normalize(d){
@@ -740,6 +760,50 @@ function normRides(d){
   if(!rs.length)return null;
   const cand=rs.filter(r=>r.comfort>1&&r.eta<=25).sort((a,b)=>a.p-b.p)[0]||rs[0]; cand.pick=true; cand.why="Best balance of price and time for this trip.";
   return {sub:`Scout compares ways to get around ${loc.city||"your area"} that actually operate there. You choose the mode.`,note:"Prices are Scout's estimates. Booking inside Basecamp depends on partner agreements; until then Scout hands off to the ride app with the trip pre-filled.",from:"",to:"",meta:[],list:rs};
+}
+const CAT={attraction:"Attraction",viewpoint:"Viewpoint",museum:"Museum",zoo:"Zoo",theme_park:"Theme park",gallery:"Gallery",park:"Park",water_park:"Water park",nature_reserve:"Nature reserve",monument:"Monument",castle:"Castle",ruins:"Ruins",memorial:"Memorial",archaeological_site:"Archaeological site",theatre:"Theatre",arts_centre:"Arts centre",cinema:"Cinema",nightclub:"Nightclub",music_venue:"Music venue",waterfall:"Waterfall",peak:"Peak"};
+function project(pts,clat,clon){const lats=pts.map(p=>p.lat).concat(clat),lons=pts.map(p=>p.lon).concat(clon);
+  const mnA=Math.min(...lats),mxA=Math.max(...lats),mnO=Math.min(...lons),mxO=Math.max(...lons),sA=Math.max(mxA-mnA,.005),sO=Math.max(mxO-mnO,.005);
+  return {X:o=>10+(o-mnO)/sO*80,Y:a=>12+(mxA-a)/sA*76}}
+function relocateMe(){if(!NEAR||!NEAR.live)return;NEAR.list.forEach(p=>{p.km=hav(loc.lat,loc.lon,p.lat,p.lon);p.dist=distTxt(p.km)});
+  NEAR.list.sort((a,b)=>a.km-b.km);const pr=project(NEAR.list,loc.lat,loc.lon);NEAR.list.forEach(p=>{p.x=pr.X(p.lon);p.y=pr.Y(p.lat)});NEAR.me={x:pr.X(loc.lon),y:pr.Y(loc.lat)};renderNearby();renderRides()}
+function rideSet(cc){const W={n:"Walk",v:"On foot",k:12.5,b:0,comfort:1,lug:"Free"},T={n:"Public transit",v:"Bus or metro",k:4,b:8,comfort:2,lug:"Check local routes"};
+  const C=(n,v,lug)=>({n,v,k:3,b:5,comfort:3,lug});
+  const by={np:[C("Pathao","Bike or car","Pay with eSewa, Khalti or cash"),C("inDrive","Car, you set the fare","Bid-based"),C("Taxi","Metered taxi","Agree the fare first"),W],
+   us:[C("Uber","Car","Card or wallet"),C("Lyft","Car","Card or wallet"),T,W],ca:[C("Uber","Car","Card or wallet"),C("Lyft","Car","Card or wallet"),T,W],
+   in:[C("Uber","Car or auto","Card, UPI or cash"),C("Ola","Car or auto","Card, UPI or cash"),C("Rapido","Bike taxi","UPI or cash"),W],
+   bd:[C("Pathao","Bike or car","bKash or cash"),C("Uber","Car","Card or cash"),W],gb:[C("Uber","Car","Card"),C("Bolt","Car","Card"),T,W]};
+  ["sg","my","th","id","vn","ph","kh","mm"].forEach(k=>by[k]=[C("Grab","Car or bike","Card or wallet"),C("Taxi","Metered taxi","Cash or card"),T,W]);
+  ["de","fr","es","it","nl","pl","pt","ee","lv","lt","cz","se","no","fi","dk","ie","at","be","ch"].forEach(k=>by[k]=[C("Uber","Car","Card"),C("Bolt","Car","Card"),T,W]);
+  const list=(by[cc]||[C("Uber","Car (where available)","Check the app"),C("Local taxi","Taxi","Agree the fare first"),T,W]).map((r,i)=>Object.assign({id:"lr"+i,c:["#2B6A8A","#B8234A","#2C7A4D","#A86A12","#5A6863"][i%5],p:null},r));
+  list[0].pick=true;list[0].why="Operates where you are now. Scout opens it with your trip filled in.";
+  return {live:true,sub:`Ride options that operate in ${loc.city||"your area"}. Fares come from each app at booking time.`,note:"Times are estimates from the real distance. Basecamp shows no fares until it has partner agreements, so you see the price in the ride app before you confirm.",from:"",to:"",meta:[],list}}
+const SOSNUM={np:"Police 100 · Ambulance 102 · Tourist Police 1144",us:"911",ca:"911",in:"112",bd:"999",gb:"999 or 112",au:"000",nz:"111",jp:"110 police · 119 ambulance"};
+const WX={0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",71:"Light snow",73:"Snow",75:"Heavy snow",80:"Rain showers",81:"Rain showers",82:"Violent showers",95:"Thunderstorm",96:"Thunderstorm with hail",99:"Thunderstorm with hail"};
+async function loadWeather(){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code,wind_speed_10m,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`);const d=await r.json();const c=d.current||{};
+  const bad=c.weather_code>=61||c.wind_speed_10m>40, sr=(d.daily&&d.daily.sunrise||[""])[0].slice(11), ss=(d.daily&&d.daily.sunset||[""])[0].slice(11);
+  $("#wxcard").innerHTML=`<span class="pill ${bad?"crit":"ok"}">Weather now · ${esc(loc.city||"your location")}</span><p>${esc(WX[c.weather_code]||"Conditions")}, ${Math.round(c.temperature_2m)}°C, wind ${Math.round(c.wind_speed_10m)} km/h${c.precipitation?", "+c.precipitation+" mm rain":""}. Sunrise ${sr}, sunset ${ss}.</p><p class="muted">Live from Open-Meteo.</p>`}catch(e){}}
+async function loadPlaces(){const R=6000,a=`(around:${R},${loc.lat},${loc.lon})`;
+  const q=`[out:json][timeout:25];(nwr${a}["tourism"~"^(attraction|viewpoint|museum|zoo|theme_park|gallery)$"]["name"];nwr${a}["leisure"~"^(park|water_park|nature_reserve)$"]["name"];nwr${a}["historic"~"^(monument|castle|ruins|memorial|archaeological_site)$"]["name"];nwr${a}["natural"~"^(waterfall|peak)$"]["name"];nwr${a}["amenity"~"^(theatre|arts_centre|cinema|nightclub|music_venue)$"]["name"];);out center 120;`;
+  const r=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});
+  const d=await r.json();const seen=new Set();
+  return (d.elements||[]).map(e=>{const t=e.tags||{},lat=e.lat??(e.center&&e.center.lat),lon=e.lon??(e.center&&e.center.lon);const kind=t.tourism||t.leisure||t.historic||t.natural||t.amenity;
+    const venue=!!t.amenity;return {name:t["name:en"]||t.name,lat,lon,type:venue?"event":"place",cat:venue?(CAT[kind]||"Venue")+" · check today's listings":(CAT[kind]||"Place"),when:t.opening_hours||"Hours not listed",price:t.fee==="no"?0:null,osm:`https://www.openstreetmap.org/${e.type}/${e.id}`}})
+   .filter(p=>p.name&&isFinite(p.lat)&&isFinite(p.lon)&&!seen.has(p.name)&&seen.add(p.name))
+   .map(p=>Object.assign(p,{km:hav(loc.lat,loc.lon,p.lat,p.lon)})).sort((a,b)=>a.km-b.km).slice(0,14)}
+async function liveLoad(){
+  const seq=++genSeq;NEAR=null;RIDE=null;selPlace=null;setCountry();
+  $("#nearbynote").innerHTML=`<div class="loading">Loading real places around ${esc(loc.city||"you")}…</div>`;
+  loadWeather();
+  const sn=SOSNUM[loc.cc]||"112 (works on most mobile networks)";$("#sostext").textContent=`Local emergency: ${sn}. Prototype: holding shows the escalation order; no alert is sent.`;
+  RIDE=rideSet(loc.cc);renderRides();
+  try{const pl=await loadPlaces();if(seq!==genSeq)return;if(!pl.length)throw 0;
+    const pr=project(pl,loc.lat,loc.lon);
+    const list=pl.map((p,i)=>({id:"o"+i,type:p.type,n:p.name,cat:p.cat,when:p.when,price:p.price,lat:p.lat,lon:p.lon,km:p.km,dist:distTxt(p.km),x:pr.X(p.lon),y:pr.Y(p.lat),why:"",osm:p.osm}));
+    NEAR={title:"Around you in "+(loc.city||"your area"),gen:true,live:true,me:{x:pr.X(loc.lon),y:pr.Y(loc.lat)},list};selPlace=list[0];
+    $("#nearbynote").innerHTML=`<div class="note">Real places within 6 km of ${loc.live?"your live position":esc(loc.city)}, from OpenStreetMap. ${loc.live?"The list follows you as you move.":""} Venues are real; check their own listings for today's events.</div>`;
+    renderNearby();renderRides();
+  }catch(e){if(seq!==genSeq)return;$("#nearbynote").innerHTML=`<div class="note">Couldn't load places from OpenStreetMap just now. <button class="btn sm" type="button" id="retrylive">Try again</button></div>`;$("#retrylive").onclick=liveLoad;renderNearby()}
 }
 let genSeq=0;
 async function generateNearby(){
@@ -772,7 +836,8 @@ Rules:
   }catch(e){fallback(e&&e.code==="not_granted"?"You didn't allow Scout to generate suggestions.":e&&e.code==="rate_limited"?"Scout is busy right now.":"Scout couldn't generate suggestions for this place.")}
 }
 $("#locchip").onclick=()=>{const f=$("#locform");f.hidden=!f.hidden;$("#locchip").setAttribute("aria-expanded",!f.hidden);if(!f.hidden)$("#locin").focus()};
-$("#locform").onsubmit=e=>{e.preventDefault();const v=$("#locin").value.trim();if(!v)return;const p=v.split(",");loc={city:p[0].trim(),country:(p[1]||"").trim(),lat:null,lon:null,src:"set by you"};$("#locform").hidden=true;$("#locchip").setAttribute("aria-expanded","false");showLoc();generateNearby();location.hash="nearby"};
+$("#locform").onsubmit=e=>{e.preventDefault();const v=$("#locin").value.trim();if(!v)return;const p=v.split(",");manualCity=true;stopWatch();$("#locform").hidden=true;$("#locchip").setAttribute("aria-expanded","false");location.hash="nearby";$("#locname").textContent="Finding "+v+"…";
+  geocodeCity(v).then(ok=>{if(ok){showLoc();liveLoad()}else{loc={city:p[0].trim(),country:(p[1]||"").trim(),lat:null,lon:null,src:"set by you"};showLoc();generateNearby()}})};
 $("#locdetect").onclick=()=>{$("#locform").hidden=true;detect(true)};
 detect(false);
 
