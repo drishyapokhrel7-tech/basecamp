@@ -502,7 +502,7 @@ td.wrap{white-space:normal}
       <div class="panel" style="margin-top:16px">
         <h2>Alerts on your route</h2>
         <div class="grid g3 small">
-          <div class="stack" id="wxcard"><span class="pill warn">Weather</span><p>Afternoon cloud and light rain from 14:00 near Ghorepani. Poon Hill sunrise tomorrow looks clear (5:45 AM).</p></div>
+          <div class="stack" id="wxcard"><span class="pill info">Weather</span><p class="muted">Loading weather where you are…</p></div>
           <div class="stack"><span class="pill info">Trail</span><p>Stone steps above Ulleri are slippery after rain. Reported by 3 trekkers in the last 48 hours.</p></div>
           <div class="stack"><span class="pill ok">Road</span><p>Nayapul to Pokhara road is open. Your Day 5 jeep is confirmed for 13:00.</p></div>
         </div>
@@ -535,6 +535,7 @@ window.addEventListener("hashchange",route);
 $("#fab").onclick=()=>{location.hash="plan";setTimeout(()=>$("#chatin").focus(),50)};
 
 /* ---------- country ---------- */
+let filter="all", selPlace=null;
 let country="np", NEAR=null, RIDE=null, loc={city:null,country:"",lat:null,lon:null,src:""};
 function fmt(cur,n){return cur==="NPR"?npr(n):cur==="USD"?"$"+(n%1?n.toFixed(2):n):cur+" "+Math.round(n).toLocaleString("en-US")}
 
@@ -572,7 +573,7 @@ addMsg("scout",`Here's a plan for two that suits beginners: <b>Nov 2–5</b>, wi
 function scoutReply(q){
   const s=q.toLowerCase();
   if(/cheap|budget|less|save/.test(s)){const g=items.find(i=>i.k==="guide");if(g.p>10000&&!approved){g.t="Porter-guide · Suman Thapa";g.d="4 days · licensed · carries up to 15 kg";g.p=10000;renderPlan();return `I swapped the guide for a licensed porter-guide, which saves <b>NPR 4,000</b>. New total: <b>${npr(planTotal())}</b>. I kept the insurance, since you'll be above 3,500 m.`}return "This is already the leanest plan I'd recommend for a first high trek. Going lower would mean skipping the guide, which I don't suggest for beginners."}
-  if(/tonight|concert|music|event|fun|show/.test(s)){const L=(NEAR||PLACES[country]).list,ev=L.find(p=>p.type==="event")||L[0];return `Near you in ${esc(loc.city||"Pokhara")}: <b>${esc(ev.n)}</b> (${esc(ev.when)}, ${esc(ev.dist)}). It won't clash with your early start. See more on <a href="#nearby">Nearby</a>.`}
+  if(/tonight|concert|music|event|fun|show/.test(s)){const L=(NEAR||{list:[]}).list,ev=L.find(p=>p.type==="event")||L[0];if(!ev)return `Still finding places around ${esc(loc.city||"you")}. Check <a href="#nearby">Nearby</a> in a moment.`;return `Near you in ${esc(loc.city||"your area")}: <b>${esc(ev.n)}</b> (${esc(ev.when)}, ${esc(ev.dist)}). It won't clash with your early start. See more on <a href="#nearby">Nearby</a>.`}
   if(/week|date|later|move|change/.test(s))return "Moving the trek to Nov 9–12 changes your dates, so I'm asking first. Same guide is free those days and the jeep price is the same. Reply <b>yes</b> and I'll update every booking.";
   if(/^yes/.test(s))return "Done in this prototype. In the real app I'd now rebook the jeep, guide and teahouses for Nov 9–12 and send you the new tickets.";
   if(/pack|gear|bring|wear/.test(s))return "Packing list for Mardi Himal in November: layers for −5°C nights at High Camp, rain shell, 2 L of water bottles, headlamp, trekking poles, sunscreen, Diamox (ask a doctor), and cash in small notes for teahouses. Sleeping bags and down jackets are already in the plan as rentals.";
@@ -618,30 +619,10 @@ function renderTripList(){$("#triplist").innerHTML=trips.map(t=>`<div class="row
 renderTripList();
 
 /* ---------- RIDES ---------- */
-const RIDES={
- np:{from:"Hotel Barahi, Lakeside",to:"Baglung Bus Park, Pokhara",meta:[["Distance","5.8 km"],["Luggage","2 backpacks (60 L)"],["Pay with","eSewa, Khalti or card"],["Pickup","Now"]],
-  sub:"Scout asks every ride app for the same trip and ranks them by price, arrival time, vehicle and luggage fit.",
-  note:"Ride booking inside Basecamp needs a partnership with each provider. Until then, “Open in app” hands off to the ride app with pickup and drop-off already filled in. Basecamp never scrapes ride apps.",
-  list:[
-   {id:"pathao",n:"Pathao",c:"#E2136E",v:"Car · Alto/WagonR",eta:4,p:410,comfort:3,lug:"Fits 2 bags",pick:true,why:"Cheapest car that fits both backpacks, arriving in 4 min."},
-   {id:"indrive",n:"inDrive",c:"#4C8A1E",v:"Car · driver bids",eta:6,p:380,comfort:3,lug:"Fits 2 bags",bid:true,why:"Lowest bid so far. Scout can counter-offer within your limit."},
-   {id:"uber",n:"Uber",c:"#111111",v:"Car",eta:9,p:520,comfort:4,lug:"Fits 2 bags"},
-   {id:"pbike",n:"Pathao",c:"#E2136E",v:"Bike",eta:2,p:160,comfort:1,lug:"No room for 60 L packs"},
-   {id:"taxi",n:"Lakeside taxi stand",c:"#8A6A12",v:"Metered taxi",eta:3,p:600,comfort:3,lug:"Fits 2 bags"}]},
- us:{from:"Pod 51 Hotel, Midtown",to:"Madison Square Garden",meta:[["Distance","2.1 mi"],["Luggage","None"],["Pay with","Card, Apple Pay, Google Pay"],["Pickup","Now"]],
-  sub:"In the USA, Scout compares Uber, Lyft, bike share, transit and walking for the same trip. You choose the mode.",
-  note:"Scout only offers what operates where you are. Fares are estimates; in-app booking depends on partner agreements, otherwise Scout hands off with the trip pre-filled.",
-  list:[
-   {id:"subway",n:"Subway",c:"#0039A6",v:"E train · 3 stops",eta:14,p:2.9,comfort:2,lug:"Card or phone tap",pick:true,why:"Fastest at rush hour and cheapest. Exit at 34 St–Penn Station.",usd:true},
-   {id:"citibike",n:"Citi Bike",c:"#0072CE",v:"Bike share",eta:16,p:4.79,comfort:2,lug:"Dock at W 33 St",usd:true},
-   {id:"uberus",n:"Uber",c:"#111111",v:"UberX",eta:22,p:24.5,comfort:4,lug:"Heavy traffic on 7 Ave",usd:true},
-   {id:"lyft",n:"Lyft",c:"#FF00BF",v:"Standard",eta:21,p:23.1,comfort:4,lug:"Heavy traffic on 7 Ave",usd:true},
-   {id:"walk",n:"Walk",c:"#5A6863",v:"On foot",eta:34,p:0,comfort:1,lug:"Mostly lit avenues",usd:true}]}
-};
 let chosenRide=null;
 function money(r){return r.p==null?"Fare in app":r.p?fmt(r.cur||(r.usd?"USD":"NPR"),r.p):"Free"}
 function renderRides(){
-  let R=RIDE||RIDES[country]; chosenRide=null;
+  let R=RIDE||rideSet(loc.cc); chosenRide=null;
   if(R.live){const km=selPlace&&selPlace.km!=null?selPlace.km:3;R.list.forEach(r=>{r.eta=Math.max(1,Math.round(km*r.k+r.b))})}
   if(NEAR&&selPlace){R=Object.assign({},R,{from:"Your location, "+(loc.city||"current position"),to:selPlace.n,meta:[["Distance",selPlace.dist.split(" · ")[0]],["Pay with",country==="np"?"eSewa, Khalti or card":"Card, Apple Pay, Google Pay or local wallet"],["Pickup","Now"]]})}
   $("#ridesub").textContent=R.sub; $("#ridenote").textContent=R.note;
@@ -664,27 +645,10 @@ function renderRides(){
 renderRides();
 
 /* ---------- NEARBY ---------- */
-const PLACES={
- np:{title:"Around Lakeside, Pokhara",lake:true,list:[
-  {id:"band",type:"event",n:"Live band night at a Lakeside café",cat:"Music",when:"Tonight 20:00–22:30",dist:"0.7 km · 9 min walk",price:500,x:46,y:52,why:"Fits your free evening and ends early enough for tomorrow."},
-  {id:"dance",type:"event",n:"Gurung cultural dance show",cat:"Culture",when:"Tonight 18:30",dist:"1.4 km · 6 min ride",price:800,x:58,y:40,promo:true,why:"Matches your interest in local culture."},
-  {id:"sarangkot",type:"place",n:"Sarangkot sunrise viewpoint",cat:"Scenic spot",when:"Sunrise 5:58 · clear skies",dist:"9 km · 25 min ride",price:0,x:24,y:18,why:"Highest-rated viewpoint near you. Best visited at sunrise."},
-  {id:"pagoda",type:"place",n:"World Peace Pagoda",cat:"Heritage",when:"Open 7:00–19:00",dist:"2.6 km · boat + 30 min hike",price:0,x:40,y:78,why:"A half-day option for your rest day on Oct 12."},
-  {id:"museum",type:"place",n:"International Mountain Museum",cat:"Museum",when:"Open 9:00–17:00",dist:"4.1 km · 12 min ride",price:500,x:72,y:72,why:"Good for a rainy afternoon."},
-  {id:"para",type:"place",n:"Paragliding from Sarangkot",cat:"Adventure",when:"Flights 9:00–15:00",dist:"9 km · pickup included",price:9500,x:30,y:24,why:"Weather window is good until noon tomorrow."},
-  {id:"cave",type:"place",n:"Gupteshwor Cave and Davis Falls",cat:"Nature",when:"Open 6:00–18:00",dist:"3.8 km · 11 min ride",price:300,x:62,y:86}]},
- us:{title:"Around Midtown, New York",lake:false,list:[
-  {id:"msg",type:"event",n:"Indie rock night at Madison Square Garden",cat:"Music",when:"Tonight 19:30",dist:"2.1 mi · 14 min subway",price:89,usd:true,x:38,y:62,why:"A band you saved is on the bill."},
-  {id:"bway",type:"event",n:"Broadway musical, evening show",cat:"Show",when:"Tonight 20:00 · 6 seats left",dist:"0.4 mi · 8 min walk",price:129,usd:true,x:52,y:44,promo:true,why:"Few tickets left for tonight."},
-  {id:"comedy",type:"event",n:"Comedy cellar late show",cat:"Comedy",when:"Tonight 22:00",dist:"3.0 mi · 18 min subway",price:25,usd:true,x:46,y:86},
-  {id:"park",type:"place",n:"Central Park, Bow Bridge",cat:"Scenic spot",when:"Open until 1:00",dist:"1.2 mi · 22 min walk",price:0,usd:true,x:58,y:12,why:"Golden hour starts at 18:05."},
-  {id:"highline",type:"place",n:"The High Line",cat:"Park",when:"Open 7:00–22:00",dist:"1.8 mi · 12 min ride",price:0,usd:true,x:22,y:70},
-  {id:"rock",type:"place",n:"Top of the Rock observation deck",cat:"Attraction",when:"Open 9:00–24:00",dist:"0.3 mi · 6 min walk",price:40,usd:true,x:56,y:34,why:"Clear skies tonight: good for the skyline view."}]}
-};
-let filter="all", selPlace=null;
+
 function priceTxt(p){return p.price==null?"See venue":p.price===0?"Free":fmt(p.cur||(p.usd?"USD":"NPR"),p.price)}
 function renderNearby(){
-  const P=NEAR||PLACES[country]; const vis=P.list.filter(p=>filter==="all"||(filter==="free"?p.price===0:p.type===filter));
+  const P=NEAR||{title:loc.city?"Around "+loc.city:"Around you",gen:true,me:{x:50,y:50},list:[]}; const vis=P.list.filter(p=>filter==="all"||(filter==="free"?p.price===0:p.type===filter));
   if(!selPlace||!P.list.includes(selPlace))selPlace=P.list[0];
   $("#nearbytitle").textContent=P.title; $("#nearbycount").textContent=vis.length+" matches";
   const base=P.gen?`<g class="contour">${Array.from({length:9},(_,i)=>`<line x1="0" x2="400" y1="${i*36}" y2="${i*36}"/>`).join("")}${Array.from({length:12},(_,i)=>`<line y1="0" y2="300" x1="${i*36}" x2="${i*36}"/>`).join("")}</g><circle class="contour" cx="${P.me.x*4}" cy="${P.me.y*3}" r="60"/><circle class="contour" cx="${P.me.x*4}" cy="${P.me.y*3}" r="120"/>`:P.lake?`<path class="contour" d="M0,120 C80,90 140,140 220,100 S360,60 400,90"/><path class="contour" d="M0,70 C90,40 150,80 230,50 S350,20 400,40"/><path class="water" d="M130,170 C150,130 220,120 260,150 C300,180 300,230 250,250 C200,270 120,250 115,215 C110,195 120,185 130,170 Z"/><path class="road" d="M0,200 C100,190 140,150 200,130 S330,140 400,120"/><path class="road" d="M220,300 C230,240 240,180 260,120 S270,40 290,0"/><text class="maplabel" x="170" y="210">Phewa Lake</text><text class="maplabel" x="300" y="150">Lakeside</text>`
@@ -695,6 +659,7 @@ function renderNearby(){
   $("#placelist").innerHTML=vis.length?vis.map(p=>`<button class="place" type="button" data-p="${p.id}" aria-pressed="${p===selPlace}"><div style="min-width:0"><div class="t">${esc(p.n)}</div><div class="small muted">${esc(p.cat)} · ${esc(p.when)}</div><div class="small muted">${esc(p.dist)}</div>${p.why?`<div class="why">Why: ${esc(p.why)}</div>`:""}</div><div style="text-align:right"><span class="num small">${priceTxt(p)}</span><br>${p.promo?'<span class="pill warn plain">Promoted</span>':`<span class="pill ${p.type==="event"?"acc":"info"} plain">${p.type==="event"?"Event":"Place"}</span>`}</div></button>`).join(""):'<p class="muted small">Nothing matches this filter nearby.</p>';
   $$("#map [data-p],#placelist [data-p]").forEach(b=>b.onclick=()=>{selPlace=P.list.find(x=>x.id===b.dataset.p);renderNearby();renderRides()});
   const s=selPlace;
+  if(!s){$("#placedetail").innerHTML=`<p class="muted" style="margin:0">${NEAR?"Nothing matches this filter here.":"Finding places where you are…"}</p>`;return}
   $("#placedetail").innerHTML=`<div class="row between"><h2 style="margin:0">${esc(s.n)}</h2>${s.promo?'<span class="pill warn plain">Promoted</span>':""}</div>
    <p class="small muted" style="margin:6px 0 12px">${esc(s.cat)} · ${esc(s.when)} · ${esc(s.dist)}</p>
    <div class="row"><button class="btn primary" type="button" id="bookplace">${s.price===0?"Add to plan + book ride":"Book ticket + ride · "+priceTxt(s)}</button><a class="btn" href="#rides">Compare rides</a></div>`;
@@ -709,21 +674,30 @@ function showLoc(){$("#locname").textContent=loc.city?loc.city+(loc.country?", "
 function setCountry(){country=/nepal|kathmandu|pokhara|lukla|chitwan|bhaktapur|lalitpur/i.test((loc.country||"")+" "+(loc.city||""))?"np":"us"}
 function fromTimezone(){let tz="";try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}
   const t=TZ[tz]; if(t)return {city:t[0],country:t[1],lat:t[2],lon:t[3],src:"from your device's time zone"};
-  const c=tz.split("/").pop().replace(/_/g," "); return c&&c!=="UTC"?{city:c,country:"",lat:null,lon:null,src:"from your device's time zone"}:{city:"Pokhara",country:"Nepal",lat:28.2096,lon:83.9856,src:"default"}}
-function deviceCoords(){return new Promise(res=>{if(!navigator.geolocation)return res(null);let done=false;const fin=v=>{if(!done){done=true;res(v)}};
-  setTimeout(()=>fin(null),6000);try{navigator.geolocation.getCurrentPosition(p=>fin({lat:p.coords.latitude,lon:p.coords.longitude}),()=>fin(null),{enableHighAccuracy:false,timeout:5500,maximumAge:600000})}catch(e){fin(null)}})}
+  const c=tz.split("/").pop().replace(/_/g," "); return {city:c&&c!=="UTC"?c:null,country:"",lat:null,lon:null,src:"from your device's time zone"}}
 let watchId=null, manualCity=false, lastFetch=null;
 function stopWatch(){if(watchId!=null&&navigator.geolocation){navigator.geolocation.clearWatch(watchId)}watchId=null}
+let gotGps=false, locSeq=0, deniedShown=false;
 async function detect(manual){
-  manualCity=false;$("#locname").textContent="Finding you…";$("#locsrc").textContent="";
-  if(!navigator.geolocation||!window.fetch){return tzFallback(manual)}
-  stopWatch();let got=false;
-  const t=setTimeout(()=>{if(!got)tzFallback(manual)},12000);
-  try{watchId=navigator.geolocation.watchPosition(p=>{got=true;clearTimeout(t);onPosition(p.coords)},err=>{if(!got){clearTimeout(t);tzFallback(manual,err)}},{enableHighAccuracy:true,timeout:15000,maximumAge:60000})}catch(e){clearTimeout(t);tzFallback(manual)}
+  manualCity=false;gotGps=false;$("#locname").textContent="Finding you…";$("#locsrc").textContent="";
+  stopWatch();approxLocate();
+  if(!navigator.geolocation)return;
+  try{watchId=navigator.geolocation.watchPosition(p=>{gotGps=true;onPosition(p.coords)},err=>{if(err&&err.code===1&&(manual||!deniedShown)){deniedShown=true;toast("Location is off for this site, so Basecamp is using your approximate location from your network. Allow location for exact nearby places, or type a city.")}},{enableHighAccuracy:true,timeout:20000,maximumAge:60000})}catch(e){}
 }
-function tzFallback(manual,err){stopWatch();loc=fromTimezone();
-  if(manual||err&&err.code===1)toast("Location is off for this site, so Basecamp used your time zone. Allow location in your browser, or type a city.");
-  showLoc();generateNearby()}
+async function ipLocate(){
+  for(const u of["https://get.geojs.io/v1/ip/geo.json","https://ipapi.co/json/","https://ipwho.is/"]){
+    try{const r=await fetch(u);if(!r.ok)continue;const d=await r.json();const lat=+d.latitude,lon=+d.longitude;
+      if(isFinite(lat)&&isFinite(lon)&&(lat||lon))return{city:d.city||d.region||"",country:d.country_name||d.country||"",cc:String(d.country_code||"").toLowerCase(),lat,lon}}catch(e){}}
+  return null}
+/* Fast first answer from the network (IP), upgraded to the device's exact position as soon as it arrives. */
+async function approxLocate(){
+  const seq=++locSeq,ip=await ipLocate();if(gotGps||manualCity||seq!==locSeq)return;
+  if(ip){loc=Object.assign(ip,{src:"approximate, from your network",live:false})}
+  else{const tz=fromTimezone();if(tz.lat==null&&tz.city&&await geocodeCity(tz.city)){loc.src=tz.src}else loc=tz;if(gotGps||manualCity||seq!==locSeq)return}
+  setCountry();showLoc();lastFetch=null;
+  if(loc.lat!=null)liveLoad();
+  else{NEAR=null;$("#nearbynote").innerHTML=`<div class="note">Basecamp couldn't tell where you are. Allow location in your browser, or type your city with the location button at the top.</div>`;renderNearby();renderRides()}
+}
 async function onPosition(c){
   if(manualCity)return;
   const prev=loc&&loc.lat!=null&&loc.live?{lat:loc.lat,lon:loc.lon}:null;
@@ -741,26 +715,6 @@ async function geocodeCity(q){
     loc={city:a.city||a.town||a.village||d.name||q,country:a.country||"",cc:(a.country_code||"").toLowerCase(),lat:+d.lat,lon:+d.lon,src:"set by you",live:false};setCountry();return true}catch(e){return false}}
 function hav(a,b,c,d){const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function distTxt(km){return (km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km")+" · "+(km<1.5?Math.max(1,Math.round(km/0.08))+" min walk":Math.round(km*3+4)+" min ride")}
-function normalize(d){
-  const cur=String(d.currency||"").toUpperCase().slice(0,3)||"USD";
-  const clat=+(loc.lat??d.lat), clon=+(loc.lon??d.lon);
-  const pl=(Array.isArray(d.places)?d.places:[]).filter(p=>p&&typeof p.name==="string"&&isFinite(+p.lat)&&isFinite(+p.lon)).slice(0,10);
-  if(!pl.length||!isFinite(clat)||!isFinite(clon))throw {code:"bad_shape"};
-  const lats=pl.map(p=>+p.lat).concat(clat),lons=pl.map(p=>+p.lon).concat(clon);
-  const mnA=Math.min(...lats),mxA=Math.max(...lats),mnO=Math.min(...lons),mxO=Math.max(...lons),sA=Math.max(mxA-mnA,.01),sO=Math.max(mxO-mnO,.01);
-  const X=o=>10+(o-mnO)/sO*80, Y=a=>12+(mxA-a)/sA*76;
-  const list=pl.map((p,i)=>({id:"n"+i,type:p.type==="event"?"event":"place",n:p.name,cat:String(p.category||"Place"),when:String(p.when||""),price:Math.max(0,+p.price||0),cur,x:X(+p.lon),y:Y(+p.lat),why:p.why?String(p.why):"",km:hav(clat,clon,+p.lat,+p.lon)}))
-    .map(p=>Object.assign(p,{dist:distTxt(p.km)})).sort((a,b)=>a.km-b.km);
-  return {title:"Around you in "+(loc.city||d.city||"your area"),gen:true,me:{x:X(clon),y:Y(clat)},list};
-}
-function normRides(d){
-  const cur=String(d.currency||"").toUpperCase().slice(0,3)||"USD", cols=["#2B6A8A","#B8234A","#2C7A4D","#A86A12","#5A6863"];
-  const rs=(Array.isArray(d.rides)?d.rides:[]).filter(r=>r&&typeof r.name==="string").slice(0,5).map((r,i)=>{const m=(r.name+" "+(r.mode||"")).toLowerCase();
-    return {id:"g"+i,n:r.name,c:cols[i%cols.length],v:String(r.mode||""),eta:Math.round(+r.eta||0),p:Math.max(0,+r.price||0),cur,comfort:/walk|bike|scooter/.test(m)?1:/bus|metro|transit|train|subway|tram|tuk|rickshaw/.test(m)?2:3,lug:String(r.note||"")}});
-  if(!rs.length)return null;
-  const cand=rs.filter(r=>r.comfort>1&&r.eta<=25).sort((a,b)=>a.p-b.p)[0]||rs[0]; cand.pick=true; cand.why="Best balance of price and time for this trip.";
-  return {sub:`Scout compares ways to get around ${loc.city||"your area"} that actually operate there. You choose the mode.`,note:"Prices are Scout's estimates. Booking inside Basecamp depends on partner agreements; until then Scout hands off to the ride app with the trip pre-filled.",from:"",to:"",meta:[],list:rs};
-}
 const CAT={attraction:"Attraction",viewpoint:"Viewpoint",museum:"Museum",zoo:"Zoo",theme_park:"Theme park",gallery:"Gallery",park:"Park",water_park:"Water park",nature_reserve:"Nature reserve",monument:"Monument",castle:"Castle",ruins:"Ruins",memorial:"Memorial",archaeological_site:"Archaeological site",theatre:"Theatre",arts_centre:"Arts centre",cinema:"Cinema",nightclub:"Nightclub",music_venue:"Music venue",waterfall:"Waterfall",peak:"Peak"};
 function project(pts,clat,clon){const lats=pts.map(p=>p.lat).concat(clat),lons=pts.map(p=>p.lon).concat(clon);
   const mnA=Math.min(...lats),mxA=Math.max(...lats),mnO=Math.min(...lons),mxO=Math.max(...lons),sA=Math.max(mxA-mnA,.005),sO=Math.max(mxO-mnO,.005);
@@ -777,7 +731,7 @@ function rideSet(cc){const W={n:"Walk",v:"On foot",k:12.5,b:0,comfort:1,lug:"Fre
   ["de","fr","es","it","nl","pl","pt","ee","lv","lt","cz","se","no","fi","dk","ie","at","be","ch"].forEach(k=>by[k]=[C("Uber","Car","Card"),C("Bolt","Car","Card"),T,W]);
   const list=(by[cc]||[C("Uber","Car (where available)","Check the app"),C("Local taxi","Taxi","Agree the fare first"),T,W]).map((r,i)=>Object.assign({id:"lr"+i,c:["#2B6A8A","#B8234A","#2C7A4D","#A86A12","#5A6863"][i%5],p:null},r));
   list[0].pick=true;list[0].why="Operates where you are now. Scout opens it with your trip filled in.";
-  return {live:true,sub:`Ride options that operate in ${loc.city||"your area"}. Fares come from each app at booking time.`,note:"Times are estimates from the real distance. Basecamp shows no fares until it has partner agreements, so you see the price in the ride app before you confirm.",from:"",to:"",meta:[],list}}
+  return {live:true,sub:`Ride options that operate in ${loc.city||"your area"}. Fares come from each app at booking time.`,note:"Times are estimates from the real distance. Basecamp shows no fares until it has partner agreements, so you see the price in the ride app before you confirm.",from:"Your location",to:"Pick a place on Nearby",meta:[["Pickup","Now"]],list}}
 const SOSNUM={np:"Police 100 · Ambulance 102 · Tourist Police 1144",us:"911",ca:"911",in:"112",bd:"999",gb:"999 or 112",au:"000",nz:"111",jp:"110 police · 119 ambulance"};
 const WX={0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",71:"Light snow",73:"Snow",75:"Heavy snow",80:"Rain showers",81:"Rain showers",82:"Violent showers",95:"Thunderstorm",96:"Thunderstorm with hail",99:"Thunderstorm with hail"};
 async function loadWeather(){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code,wind_speed_10m,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`);const d=await r.json();const c=d.current||{};
@@ -806,38 +760,9 @@ async function liveLoad(){
   }catch(e){if(seq!==genSeq)return;$("#nearbynote").innerHTML=`<div class="note">Couldn't load places from OpenStreetMap just now. <button class="btn sm" type="button" id="retrylive">Try again</button></div>`;$("#retrylive").onclick=liveLoad;renderNearby()}
 }
 let genSeq=0;
-async function generateNearby(){
-  const seq=++genSeq; NEAR=null;RIDE=null;selPlace=null;setCountry();
-  const where=loc.city?`${loc.city}${loc.country?", "+loc.country:""}`:"";
-  $("#nearbynote").innerHTML=`<div class="loading">Scout is finding things to do near ${esc(where||"you")}…</div>`;
-  renderNearby();renderRides();
-  let sample=null; try{sample=window.claude?await window.claude.use("sample"):null}catch(e){}
-  const fallback=msg=>{if(seq!==genSeq)return;const city=country==="np"?"Pokhara":"New York";const same=new RegExp(city,"i").test(where);
-    $("#nearbynote").innerHTML=`<div class="note">${esc(msg)}${same?"":" Showing sample places in "+city+" instead."} <button class="btn sm" type="button" id="retrygen" style="margin-left:6px">Try again</button></div>`;
-    $("#retrygen").onclick=generateNearby; renderNearby();renderRides()};
-  if(!sample)return fallback("Live suggestions need Scout, which isn't available in this view.");
-  const now=new Date();
-  const prompt=`You are Scout, the local-guide agent inside the Basecamp adventure travel app. The traveler is ${where?"in "+where:"near"}${loc.lat!=null?` at coordinates ${(+loc.lat).toFixed(3)}, ${(+loc.lon).toFixed(3)}`:""}. Today is ${now.toDateString()}.
-Return ONLY JSON in exactly this shape:
-{"city":string,"country":string,"lat":number,"lon":number,"currency":"3-letter ISO code","places":[{"name":string,"type":"event" or "place","category":string,"when":string,"price":number,"lat":number,"lon":number,"why":string}],"rides":[{"name":string,"mode":string,"price":number,"eta":number,"note":string}]}
-Rules:
-- Top-level lat/lon: the traveler's position (the given coordinates if any, otherwise the city centre).
-- places: 8 items within about 15 km: 3 of type "event" and 5 of type "place". Places must be real, well-known attractions, viewpoints, parks, heritage sites, markets or adventure spots, with approximate real coordinates. Mix categories.
-- Events: recurring or typical things happening in the evening or this week (for example "Live music in Thamel bars, most evenings"). Never invent specific dated events, performers or ticket counts.
-- when: short opening hours or typical timing. price: typical entry price in the local currency, 0 if free. why: one short sentence on why it suits an adventure traveler now.
-- rides: 4 or 5 ways to get around that really operate in this city (ride apps, taxis, public transit, bike or scooter share, walking) for a trip of about 3 km. price in local currency, eta in minutes, note under 8 words.`;
-  try{const d=await sample.json(prompt,{modelTier:"default"}); if(seq!==genSeq)return;
-    if(!loc.city&&d.city){loc.city=String(d.city);loc.country=String(d.country||"");showLoc();setCountry()}
-    if(loc.lat==null&&isFinite(+d.lat)){loc.lat=+d.lat;loc.lon=+d.lon}
-    if(!loc.country&&d.country){loc.country=String(d.country);showLoc();setCountry()}
-    NEAR=normalize(d); RIDE=normRides(d); selPlace=NEAR.list[0];
-    $("#nearbynote").innerHTML=`<div class="note">Suggestions generated by Scout for ${esc(loc.city||"your area")}. Times and prices are typical, so check before you go.</div>`;
-    renderNearby();renderRides();
-  }catch(e){fallback(e&&e.code==="not_granted"?"You didn't allow Scout to generate suggestions.":e&&e.code==="rate_limited"?"Scout is busy right now.":"Scout couldn't generate suggestions for this place.")}
-}
 $("#locchip").onclick=()=>{const f=$("#locform");f.hidden=!f.hidden;$("#locchip").setAttribute("aria-expanded",!f.hidden);if(!f.hidden)$("#locin").focus()};
-$("#locform").onsubmit=e=>{e.preventDefault();const v=$("#locin").value.trim();if(!v)return;const p=v.split(",");manualCity=true;stopWatch();$("#locform").hidden=true;$("#locchip").setAttribute("aria-expanded","false");location.hash="nearby";$("#locname").textContent="Finding "+v+"…";
-  geocodeCity(v).then(ok=>{if(ok){showLoc();liveLoad()}else{loc={city:p[0].trim(),country:(p[1]||"").trim(),lat:null,lon:null,src:"set by you"};showLoc();generateNearby()}})};
+$("#locform").onsubmit=e=>{e.preventDefault();const v=$("#locin").value.trim();if(!v)return;manualCity=true;locSeq++;stopWatch();$("#locform").hidden=true;$("#locchip").setAttribute("aria-expanded","false");location.hash="nearby";$("#locname").textContent="Finding "+v+"…";
+  geocodeCity(v).then(ok=>{if(ok){showLoc();liveLoad()}else{$("#locname").textContent="Couldn't find "+v;$("#locsrc").textContent="· try adding the country";toast("Couldn't find that place. Try a nearby town, or add the country.")}})};
 $("#locdetect").onclick=()=>{$("#locform").hidden=true;detect(true)};
 detect(false);
 
